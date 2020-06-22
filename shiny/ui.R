@@ -38,6 +38,12 @@ navbarPage(theme = shinytheme("simplex"),
                       ), # end fluidRow
                       br(),
                       fluidRow(
+                          column(width = 12,
+                                 DT::dataTableOutput("sum_dt")
+                          ) # end column
+                      ), # end fluidRow
+                      br(),
+                      fluidRow(
                         column(width = 12,
                                DT::dataTableOutput("s_dt")
                                ) # end column

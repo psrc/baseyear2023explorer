@@ -87,9 +87,13 @@ function(input, output, session) {
   # format table
   format.table <- function(sSelected) {
     sSelected %>%
-      #select(-(OBJECTID_12:PIN), -(MAJOR:Shape_Le_1), -(Shape_Length)) %>%
-      rename(#fips_id = PINFIPS,
-              county = county_id,
+      rename(parcel_fips = parcel_id_fips,
+              cnty = county_id,
+              tract_id = census_tract_id,
+              block_group_id = census_block_group_id,
+              block_id = census_block_id,
+             census_2010_block = census_2010_block_id,
+              LUtype = land_use_type_id,
       #        bldg_sqft = building_sqft, 
                nonres_sqft = non_residential_sqft,
                HH = households,
@@ -107,8 +111,8 @@ function(input, output, session) {
               lat = round(lat, 4),
               lon = round(lon, 4)
        ) %>%
-      select(county, parcel_id, parcel_id_fips, census_tract_id, census_block_group_id, census_block_id, census_2010_block_id, zone_id, 
-             parcel_sqft, land_use_type_id, use_code, land_value, DU, HH, nonres_sqft, jobs, lat,lon)
+      select(cnty, parcel_id, parcel_fips, tract_id, block_group_id, block_id, census_2010_block, zone_id, 
+             parcel_sqft, LUtype, use_code, land_value, DU, HH, nonres_sqft, jobs, lat,lon)
   }
 
   # Search by Number -------------------------------------------------------- 
@@ -169,8 +173,8 @@ function(input, output, session) {
     
     sSelected <- sSelected()
     format.table(sSelected) %>%
-      mutate(locate = paste('<a class="go-map" href="" data-lat="', lat, '" data-long="', lon, '"><i class="fa fa-crosshairs"></i></a>', sep="")) %>%
-      select(locate, everything())
+      mutate(loc = paste('<a class="go-map" href="" data-lat="', lat, '" data-long="', lon, '"><i class="fa fa-crosshairs"></i></a>', sep="")) %>%
+      select(loc, everything())
   })
   
   observe({
@@ -185,7 +189,7 @@ function(input, output, session) {
     leaflet.blank()
   })
   
-  # zoom to selected parcel in datatable when 'locate' icon is clicked
+  # zoom to selected parcel in datatable when 'loc' icon is clicked
   # Adapted from https://github.com/rstudio/shiny-examples/tree/master/063-superzip-example
   observe({
     if (is.null(input$goto))
@@ -202,7 +206,7 @@ function(input, output, session) {
     locate <- DT::dataTableAjax(session, sTable())
     DT::datatable(sTable(), 
                   extensions = 'Buttons', 
-                  caption = "Click on icon in 'locate' field to zoom to parcel",
+                  caption = "Click on icon in 'loc' field to zoom to parcel",
                   options = list(ajax = list(url = locate),
                                  dom = 'Bfrtip',
                                  buttons = c('csv', 'excel')
@@ -210,6 +214,22 @@ function(input, output, session) {
                   escape = c(1))
   })
 
+  output$sum_dt <- DT::renderDataTable({
+    dat <- sSelected()
+    if (is.null(dat) || nrow(dat) < 2) return(NULL) # don't show summary table if only one record was selected
+    d <- data.table(dat)[, .(
+                    id = isolate(input$s_id),
+                    buildings = .N,
+                    DU = sum(residential_units, na.rm = TRUE), 
+                    HH = sum(households, na.rm = TRUE),
+                    non_res_sf = sum(non_residential_sqft, na.rm = TRUE), 
+                    Jobs = sum(jobs, na.rm = TRUE))
+                  ]
+    setnames(d, "id", isolate(input$s_queryBy))
+    datatable(d, caption = "Summary", rownames = FALSE,
+              options = list(paging = FALSE, searching = FALSE, columns.orderable = FALSE))
+  })
+  
 
   # Search by Click ---------------------------------------------------------  
 
@@ -297,7 +317,7 @@ function(input, output, session) {
     subdata
   })
   
-  subset.data.deb <- subset.data %>% debounce(1000) # causes some delay for collecting inputs
+  subset.data.deb <- subset.data %>% debounce(500) # causes some delay for collecting inputs
   
   subset.data.no.id <- reactive({
     subdata <- buildings
@@ -318,7 +338,7 @@ function(input, output, session) {
     subdata
   })
   
-  subset.data.no.id.deb <- subset.data.no.id %>% debounce(1000) # causes some delay for collecting inputs
+  subset.data.no.id.deb <- subset.data.no.id %>% debounce(500) # causes some delay for collecting inputs
   
   # display markers
   observe({
@@ -418,18 +438,21 @@ function(input, output, session) {
     # look up parcels by ids found
     dat <- subset.data.no.id.deb()
     if(is.null(dat)) return()
-    data.of.click$selected <- subset(dat, parcel_id %in% data.of.click$clickedMarker)
+    sdat <- subset(dat, parcel_id %in% data.of.click$clickedMarker)
+    if(nrow(sdat) > 5000)
+      sdat.to.mark <- sdat[sample(1:nrow(sdat), 5000),]
+    data.of.click$selected <- sdat
     proxy <- leafletProxy("mapb")
     proxy %>% 
-      addCircles(data = data.of.click$selected, 
-                 lat = data.of.click$selected$lat,
-                 lng = data.of.click$selected$lon,
+      addCircles(data = sdat.to.mark, 
+                 lat = sdat.to.mark$lat,
+                 lng = sdat.to.mark$lon,
                  fillColor = "mediumseagreen",
                  fillOpacity = 1,
                  color = "mediumseagreen",
                  weight = 3,
-                 stroke = T,
-                 layerId = as.character(data.of.click$selected$secondLocationID),
+                 stroke = TRUE,
+                 layerId = as.character(sdat.to.mark$secondLocationID),
                  highlightOptions = highlightOptions(color = "hotpink",
                                                      opacity = 1.0,
                                                      weight = 2,
@@ -456,17 +479,14 @@ function(input, output, session) {
   output$bdt <- DT::renderDataTable({
     if (length(data.of.click$selected) == 0) return(NULL)
     data <- data.of.click$selected
-    # if (data > 0) {
-    #   data <- data.of.click$selected
-    #   browser()
-    # } 
-    d <- data[, `:=`(DU = residential_units, 
-                     HH = households,
-                     non_res_sf = non_residential_sqft, 
-                     Jobs = jobs)
-              ][, lapply(.SD, sum), .SDcols = c("DU", "HH", "non_res_sf", "Jobs")]
-    datatable(d)
-    
+    d <- data[, .(buildings = .N,
+                     DU = sum(residential_units), 
+                     HH = sum(households),
+                     non_res_sf = sum(non_residential_sqft), 
+                     Jobs = sum(jobs))
+              ]
+    datatable(d, caption = "Summary", rownames = FALSE,
+              options = list(paging = FALSE, searching = FALSE, columns.orderable = FALSE))
   })
   
   

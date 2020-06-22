@@ -14,6 +14,7 @@ jobs.file.name <- "jobs.csv"
 
 if(process.parcels){
     pclattr <- fread(parcels.file.name)
+    pclattr[, census_2010_block_id := as.character(census_2010_block_id)]
     saveRDS(pclattr, "parcels.rds")
 }
 
