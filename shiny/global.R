@@ -9,11 +9,12 @@ library(geoshaper)
 library(sp)
 library(data.table)
 
-#wrkdir <- '/home/shiny/apps/' # shiny path
-wrkdir <- '/Users/hana/psrc/R/shinyserver'
+wrkdir <- '/home/shiny/apps/' # shiny path
+#wrkdir <- '/Users/hana/psrc/R/shinyserver'
 # wrkdir <- 'C:/Users/CLam/Desktop/'
 
-data <- 'base_year_2018/data'
+#data <- 'base_year_2018/data'
+data <- 'baseyear2018explorer/data'
 
 parcel.main <- 'parcels_geo.rds'
 parcel.att <- 'parcels.rds'
@@ -58,6 +59,13 @@ parcels.attr$secondLocationID <- paste(as.character(parcels.attr$parcel_id), "_s
 
 buildings <- merge(buildings, building_types, by = "building_type_id")
 buildings <- merge(buildings, parcels.attr[, c("parcel_id", setdiff(colnames(parcels.attr), colnames(buildings))), with = FALSE], by = "parcel_id")
+
+# add jitter to coordinates where there are multiple buildings per parcel
+buildings[, Nbld := .N, by = parcel_id]
+set.seed(1234)
+buildings[Nbld > 1, lat := jitter(lat)]
+buildings[Nbld > 1, lon := jitter(lon)]
+buildings[, Nbld := NULL]
 
 coordinates <- SpatialPointsDataFrame(parcels.attr[!is.na(lon),.(lon, lat)], parcels.attr[!is.na(lon)])
 
