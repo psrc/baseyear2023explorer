@@ -442,17 +442,16 @@ function(input, output, session) {
     # look up parcels by ids found
     dat <- subset.data.no.id.deb()
     if(is.null(dat)) return()
-    sdat <- subset(dat, parcel_id %in% data.of.click$clickedMarker)
-    if(nrow(sdat) > 5000)
-      sdat.to.mark <- sdat[sample(1:nrow(sdat), 5000),]
-    else sdat.to.mark <- sdat
-    sdat.to.mark
+    subset(dat, parcel_id %in% data.of.click$clickedMarker)
   })
   
   update.selection <- reactive({
     dat <- draw.selection.data()
+    if(nrow(dat) > 5000)
+      sdat.to.mark <- sdat[sample(1:nrow(dat), 5000),]
+    else sdat.to.mark <- dat
     data.of.click$selected <- dat
-    leaflet.results.blds(leafletProxy("mapb"), dat, marker.popup(), add = TRUE,
+    leaflet.results.blds(leafletProxy("mapb"), sdat.to.mark, marker.popup(), add = TRUE,
                          cluster = input$cluster#, layer.id = sdat.to.mark$secondLocationID
                          )
   })
