@@ -286,14 +286,21 @@ function(input, output, session) {
   #######
   # Buildings tab
   ##########
+  # store selections for tracking
+  data.of.click <- reactiveValues(clickedMarker = list(), #all parcels within boundaries (unfiltered)
+                                  selected = list(), #parcels matching sub.data.deb() (filtered)
+                                  showed = list(), # showed on the map
+                                  selected.by.id = list()
+  ) 
+  
+  
   # display initial map
   output$mapb <- renderLeaflet({
     leaflet.blank.blds()
   })
   
   subset.data <- reactive({
-    if (is.null(values$ids_bld)) return(NULL)
-    
+    if (is.null(values$ids_bld) || values$ids_bld == " ") return(NULL)
     rng <- grep(":", values$ids_bld)
     
     if (length(rng) > 0) {
@@ -321,7 +328,7 @@ function(input, output, session) {
     subdata
   })
   
-  subset.data.deb <- subset.data %>% debounce(500) # causes some delay for collecting inputs
+  subset.data.deb <- subset.data %>% debounce(1000) # causes some delay for collecting inputs
   
   subset.data.no.id <- reactive({
     subdata <- buildings
@@ -342,7 +349,7 @@ function(input, output, session) {
     subdata
   })
   
-  subset.data.no.id.deb <- subset.data.no.id %>% debounce(500) # causes some delay for collecting inputs
+  subset.data.no.id.deb <- subset.data.no.id %>% debounce(1000) # causes some delay for collecting inputs
   
   marker.popup <- function() ~paste0("Parcel ID:  ", parcel_id, 
                                      "<br>Bld ID:     ", as.integer(building_id), 
@@ -355,17 +362,25 @@ function(input, output, session) {
                             )
   # display markers
   observe({
-    #bSelected <- bSelected()
-    #if (is.null(bSelected) || values$ids_bld == " ") return()
-    data <- subset.data.deb()
-    if (is.null(data) || values$ids_bld == " ") return()
-    leaflet.results.blds(leafletProxy("mapb"), data, marker.popup(), 
+    dat <- subset.data.deb()
+    if(!is.null(dat) && values$ids_bld != " ") {
+      leaflet.results.blds(leafletProxy("mapb"), dat, marker.popup(), 
                     cluster = input$cluster)
-  })
-  
-  # Clear map
-  observeEvent(input$clear, {
-    leafletProxy("mapb") %>% clearMarkers() %>% clearMarkerClusters()
+      data.of.click$selected.by.id <- dat
+    } else {
+      if(length(data.of.click$selected.by.id) > 0){ # previous selection needs to be removed
+        leafletProxy("mapb") %>% clearMarkers() %>% clearMarkerClusters()
+        data.of.click$selected.by.id <- NULL
+      }
+    }
+    update.selection()
+    if(length(data.of.click$showed) > 0) {
+      if(length(data.of.click$selected.by.id) == 0) 
+        leafletProxy("mapb") %>% clearMarkers() %>% clearMarkerClusters()
+      leaflet.results.blds(leafletProxy("mapb"),data.of.click$showed, marker.popup(), add = TRUE,
+                           cluster = input$cluster)
+      
+    }
   })
   
   # Query by:
@@ -381,33 +396,15 @@ function(input, output, session) {
   # clear map, table, and values in input text box
   observeEvent(input$bld_clearButton, {
     values$ids_bld = " "
-  })
-  
-  observeEvent(input$bld_clearButton, {
     updateTextInput(session, "bld_id",
                     value = " ")
-  })
-  
-  observeEvent(input$bld_clearButton, {
     leafletProxy("mapb") %>% clearMarkers() %>% clearMarkerClusters()
     data.of.click$selected <- NULL # clears table
+    data.of.click$selected.by.id <- NULL
+    data.of.click$showed <- NULL
+    data.of.click$clickedMarker <- NULL
   })
   
-  bSelected <- reactive({
-    if (is.null(values$ids_bld)) return(NULL)
-    
-    rng <- grep(":", values$ids_bld)
-    
-    if (length(rng) > 0) {
-      rng.result <- scan(text = values$ids_bld, sep = ":", quiet = TRUE)
-      numItems <- rng.result[1]:rng.result[2]
-    } else {
-      numItems <- scan(text = values$ids_bld, sep = ",", quiet = TRUE)
-    }
-    expr <- lazyeval::interp(~col %in% numItems, col = as.name(bQueryBy()))
-    bld.filter <- buildings %>% filter_(expr) 
-    
-  })
   # Color palette
   #palette.bt <- colorFactor(rainbow(nrow(building_types_selection)), 
   #                          levels=building_types_selection[,1])
@@ -422,38 +419,36 @@ function(input, output, session) {
   
   #### Adapted from https://redoakstrategic.com/geoshaper/ ---------------------  
   
-  # store selections for tracking
-  data.of.click <- reactiveValues(clickedMarker = list(), #all parcels within boundaries (unfiltered)
-                                  selected = list()) #parcels matching sub.data.deb() (filtered)
-  
+
   draw.selection.data <- reactive({
+    if(is.null(input$mapb_draw_new_feature)) return(NULL)
     found_in_bounds <- findLocations(shape = input$mapb_draw_new_feature,
                                      location_coordinates = coordinates,
                                      location_id_colname = "parcel_id")
-    
+    clickedM <- isolate(data.of.click$clickedMarker)
     for(id in found_in_bounds){
-      if(id %in%  data.of.click$clickedMarker){
+      if(id %in%  clickedM){
         # don't add id
       } else {
         # add id
-        data.of.click$clickedMarker <- append(data.of.click$clickedMarker, id, 0)
+        clickedM <- append(clickedM, id, 0)
       }
     }
     # look up parcels by ids found
     dat <- subset.data.no.id.deb()
     if(is.null(dat)) return()
-    subset(dat, parcel_id %in% data.of.click$clickedMarker)
+    subset(dat, parcel_id %in% clickedM)
   })
   
   update.selection <- reactive({
     dat <- draw.selection.data()
+    if(is.null(dat)) return(NULL)
     if(nrow(dat) > 5000)
       sdat.to.mark <- dat[sample(1:nrow(dat), 5000),]
     else sdat.to.mark <- dat
     data.of.click$selected <- dat
-    leaflet.results.blds(leafletProxy("mapb"), sdat.to.mark, marker.popup(), add = TRUE,
-                         cluster = input$cluster#, layer.id = sdat.to.mark$secondLocationID
-                         )
+    data.of.click$showed <- sdat.to.mark
+    data.of.click$clickedMarker <- dat$parcel_id
   })
   
   observeEvent(input$mapb_draw_new_feature, {
@@ -463,26 +458,30 @@ function(input, output, session) {
   
   observeEvent(input$mapb_draw_deleted_features,{
     # loop through list of one or more deleted features/ polygons
-    # for(feature in input$mapb_draw_deleted_features$features){
-    #   # get ids for locations within the bounding shape
-    #   bounded_layer_ids <- findLocations(shape = feature,
-    #                                      location_coordinates = coordinates,
-    #                                      location_id_colname = "secondLocationID")
-    #   # remove second layer representing selected locations
-    #   proxy <- leafletProxy("mapb")
-    #   proxy %>% removeShape(layerId = as.character(bounded_layer_ids))
-    #   first_layer_ids <- subset(subset.data.no.id.deb(), secondLocationID %in% bounded_layer_ids)$locationID
-    #   data.of.click$clickedMarker <- data.of.click$clickedMarker[!data.of.click$clickedMarker
-    #                                                              %in% first_layer_ids]
-    # }
-    data.of.click$selected <- NULL
-    leafletProxy("mapb") %>% clearMarkers() %>% clearMarkerClusters()
+    bounded_layer_ids <- c()
+    for(feature in input$mapb_draw_deleted_features$features){
+       # get ids for locations within the bounding shape
+       bounded_layer_ids <- c(bounded_layer_ids, 
+                              findLocations(shape = feature,
+                                          location_coordinates = coordinates,
+                                          location_id_colname = "parcel_id"
+                                          )
+                              )
+    }
+    proxy <- leafletProxy("mapb")
+    proxy %>% removeShape(layerId = as.character(bounded_layer_ids))
+    if(length(data.of.click$clickedMarker) > 0)
+      data.of.click$clickedMarker <- data.of.click$clickedMarker[!data.of.click$clickedMarker %in% bounded_layer_ids]
+    if(length(data.of.click$selected) > 0)
+      data.of.click$selected <- data.of.click$selected[!parcel_id %in% bounded_layer_ids]
+    if(length(data.of.click$showed) > 0)
+      data.of.click$showed <- data.of.click$showed[!parcel_id %in% bounded_layer_ids]
   })
   
   # Display summary table
   output$bdt <- DT::renderDataTable({
-    if (length(data.of.click$selected) == 0) return(NULL)
-    data <- data.of.click$selected
+    if (length(data.of.click$selected) == 0 && length(data.of.click$selected.by.id) == 0) return(NULL)
+    data <- unique(rbind(data.of.click$selected, data.of.click$selected.by.id))
     d <- data[, .(buildings = .N,
                      DU = sum(residential_units), 
                      HH = sum(households),
