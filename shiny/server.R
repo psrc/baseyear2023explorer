@@ -448,7 +448,7 @@ function(input, output, session) {
   update.selection <- reactive({
     dat <- draw.selection.data()
     if(nrow(dat) > 5000)
-      sdat.to.mark <- sdat[sample(1:nrow(dat), 5000),]
+      sdat.to.mark <- dat[sample(1:nrow(dat), 5000),]
     else sdat.to.mark <- dat
     data.of.click$selected <- dat
     leaflet.results.blds(leafletProxy("mapb"), sdat.to.mark, marker.popup(), add = TRUE,
