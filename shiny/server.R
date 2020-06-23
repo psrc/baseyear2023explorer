@@ -61,27 +61,31 @@ function(input, output, session) {
   
   
   # show leaflet results for buildings
-  leaflet.results.blds <- function(proxy, selected.data, popup, add=FALSE, cluster = FALSE) {
+  leaflet.results.blds <- function(proxy, selected.data, popup, add=FALSE, cluster = FALSE, layer.id = NULL) {
     if(!add) proxy <- proxy %>% clearMarkers() %>% clearMarkerClusters()
     cluster.options <- NULL
     if(cluster) cluster.options <- markerClusterOptions()
-    proxy %>% addCircleMarkers(data = selected.data,
+    proxy <- proxy %>% addCircleMarkers(data = selected.data,
                                ~lon,
                                ~lat,
                                radius = 3,
                                popup = popup,
                                fillOpacity=0.4,
                                color = ~color, 
-                               clusterOptions = cluster.options
-    ) %>% #### Adapted from https://redoakstrategic.com/geoshaper/
-      addDrawToolbar(targetGroup='Selected',
+                               clusterOptions = cluster.options,
+                               layerId = as.character(layer.id)
+                )
+    if(!add)
+     proxy <- proxy %>% #### Adapted from https://redoakstrategic.com/geoshaper/
+                addDrawToolbar(targetGroup='Selected',
                      polylineOptions=FALSE,
                      markerOptions = FALSE,
                      polygonOptions = drawPolygonOptions(shapeOptions=drawShapeOptions(fillOpacity = 0,color = 'white',weight = 3)),
                      rectangleOptions = drawRectangleOptions(shapeOptions=drawShapeOptions(fillOpacity = 0,color = 'white',weight = 3)),
                      circleOptions = drawCircleOptions(shapeOptions = drawShapeOptions(fillOpacity = 0,color = 'white',weight = 3)),
                      editOptions = editToolbarOptions(edit = FALSE, selectedPathOptions = selectedPathOptions())
-      )
+        )
+    proxy
   }  
   
   # format table
@@ -340,22 +344,22 @@ function(input, output, session) {
   
   subset.data.no.id.deb <- subset.data.no.id %>% debounce(500) # causes some delay for collecting inputs
   
+  marker.popup <- function() ~paste0("Parcel ID:  ", parcel_id, 
+                                     "<br>Bld ID:     ", as.integer(building_id), 
+                                     "<br>Year built: ", as.integer(year_built),
+                                     "<br>Bld type:   ", building_type_name,
+                                     "<br>DU:         ", as.integer(residential_units),
+                                     "<br>HHs:         ", as.integer(households),
+                                     "<br>Non-res sf: ", as.integer(non_residential_sqft),
+                                     "<br>Jobs: ", as.integer(jobs)
+                            )
   # display markers
   observe({
     #bSelected <- bSelected()
     #if (is.null(bSelected) || values$ids_bld == " ") return()
     data <- subset.data.deb()
     if (is.null(data) || values$ids_bld == " ") return()
-    marker.popup <- ~paste0("Parcel ID:  ", parcel_id, 
-                            "<br>Bld ID:     ", as.integer(building_id), 
-                            "<br>Year built: ", as.integer(year_built),
-                            "<br>Bld type:   ", building_type_name,
-                            "<br>DU:         ", as.integer(residential_units),
-                            "<br>HHs:         ", as.integer(households),
-                            "<br>Non-res sf: ", as.integer(non_residential_sqft),
-                            "<br>Jobs: ", as.integer(jobs)
-                            )
-    leaflet.results.blds(leafletProxy("mapb"), data, marker.popup, 
+    leaflet.results.blds(leafletProxy("mapb"), data, marker.popup(), 
                     cluster = input$cluster)
   })
   
@@ -386,6 +390,7 @@ function(input, output, session) {
   
   observeEvent(input$bld_clearButton, {
     leafletProxy("mapb") %>% clearMarkers() %>% clearMarkerClusters()
+    data.of.click$selected <- NULL # clears table
   })
   
   bSelected <- reactive({
@@ -421,8 +426,7 @@ function(input, output, session) {
   data.of.click <- reactiveValues(clickedMarker = list(), #all parcels within boundaries (unfiltered)
                                   selected = list()) #parcels matching sub.data.deb() (filtered)
   
-  observeEvent(input$mapb_draw_new_feature, {
-    #Only add new layers for bounded locations
+  draw.selection.data <- reactive({
     found_in_bounds <- findLocations(shape = input$mapb_draw_new_feature,
                                      location_coordinates = coordinates,
                                      location_id_colname = "parcel_id")
@@ -441,40 +445,41 @@ function(input, output, session) {
     sdat <- subset(dat, parcel_id %in% data.of.click$clickedMarker)
     if(nrow(sdat) > 5000)
       sdat.to.mark <- sdat[sample(1:nrow(sdat), 5000),]
-    data.of.click$selected <- sdat
-    proxy <- leafletProxy("mapb")
-    proxy %>% 
-      addCircles(data = sdat.to.mark, 
-                 lat = sdat.to.mark$lat,
-                 lng = sdat.to.mark$lon,
-                 fillColor = "mediumseagreen",
-                 fillOpacity = 1,
-                 color = "mediumseagreen",
-                 weight = 3,
-                 stroke = TRUE,
-                 layerId = as.character(sdat.to.mark$secondLocationID),
-                 highlightOptions = highlightOptions(color = "hotpink",
-                                                     opacity = 1.0,
-                                                     weight = 2,
-                                                     bringToFront = TRUE))
+    else sdat.to.mark <- sdat
+    sdat.to.mark
+  })
+  
+  update.selection <- reactive({
+    dat <- draw.selection.data()
+    data.of.click$selected <- dat
+    leaflet.results.blds(leafletProxy("mapb"), dat, marker.popup(), add = TRUE,
+                         cluster = input$cluster#, layer.id = sdat.to.mark$secondLocationID
+                         )
+  })
+  
+  observeEvent(input$mapb_draw_new_feature, {
+    #Only add new layers for bounded locations
+    update.selection()
   })
   
   observeEvent(input$mapb_draw_deleted_features,{
     # loop through list of one or more deleted features/ polygons
-    for(feature in input$mapb_draw_deleted_features$features){
-      # get ids for locations within the bounding shape
-      bounded_layer_ids <- findLocations(shape = feature,
-                                         location_coordinates = coordinates,
-                                         location_id_colname = "secondLocationID")
-      # remove second layer representing selected locations
-      proxy <- leafletProxy("mapb")
-      proxy %>% removeShape(layerId = as.character(bounded_layer_ids))
-      first_layer_ids <- subset(subset.data.no.id.deb(), secondLocationID %in% bounded_layer_ids)$locationID
-      data.of.click$clickedMarker <- data.of.click$clickedMarker[!data.of.click$clickedMarker
-                                                                 %in% first_layer_ids]
-    }
+    # for(feature in input$mapb_draw_deleted_features$features){
+    #   # get ids for locations within the bounding shape
+    #   bounded_layer_ids <- findLocations(shape = feature,
+    #                                      location_coordinates = coordinates,
+    #                                      location_id_colname = "secondLocationID")
+    #   # remove second layer representing selected locations
+    #   proxy <- leafletProxy("mapb")
+    #   proxy %>% removeShape(layerId = as.character(bounded_layer_ids))
+    #   first_layer_ids <- subset(subset.data.no.id.deb(), secondLocationID %in% bounded_layer_ids)$locationID
+    #   data.of.click$clickedMarker <- data.of.click$clickedMarker[!data.of.click$clickedMarker
+    #                                                              %in% first_layer_ids]
+    # }
     data.of.click$selected <- NULL
+    leafletProxy("mapb") %>% clearMarkers() %>% clearMarkerClusters()
   })
+  
   # Display summary table
   output$bdt <- DT::renderDataTable({
     if (length(data.of.click$selected) == 0) return(NULL)
