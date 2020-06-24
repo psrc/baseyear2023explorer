@@ -226,6 +226,7 @@ function(input, output, session) {
                     buildings = .N,
                     DU = sum(residential_units, na.rm = TRUE), 
                     HH = sum(households, na.rm = TRUE),
+                    Pop = sum(population, na.rm = TRUE),
                     non_res_sf = sum(non_residential_sqft, na.rm = TRUE), 
                     Jobs = sum(jobs, na.rm = TRUE))
                   ]
@@ -478,13 +479,14 @@ function(input, output, session) {
       data.of.click$showed <- data.of.click$showed[!parcel_id %in% bounded_layer_ids]
   })
   
-  # Display summary table
+  # Display summary table in the buildings tab
   output$bdt <- DT::renderDataTable({
     if (length(data.of.click$selected) == 0 && length(data.of.click$selected.by.id) == 0) return(NULL)
     data <- unique(rbind(data.of.click$selected, data.of.click$selected.by.id))
     d <- data[, .(buildings = .N,
                      DU = sum(residential_units), 
                      HH = sum(households),
+                     Pop = sum(population),
                      non_res_sf = sum(non_residential_sqft), 
                      Jobs = sum(jobs))
               ]
@@ -492,6 +494,37 @@ function(input, output, session) {
               options = list(paging = FALSE, searching = FALSE, columns.orderable = FALSE))
   })
   
+  ### Table tab
+  # table manipulation
+  tTable <- reactive({
+    dat <- parcels.attr
+    if (is.null(dat)|| nrow(dat) < 1) return(NULL)
+
+    d <- data.table(dat)[, .(
+        DU = sum(residential_units, na.rm = TRUE), 
+        HH = sum(households, na.rm = TRUE),
+        Pop = sum(population, na.rm = TRUE),
+        non_res_sf = sum(non_residential_sqft, na.rm = TRUE), 
+        Jobs = sum(jobs, na.rm = TRUE)), 
+      by = eval(input$tbl_queryBy)
+      ]
+    d
+    #datatable(d, caption = "Summary", rownames = FALSE,
+    #          options = list(paging = TRUE, searching = TRUE, columns.orderable = TRUE))
+  })
+  
+  # Display table in the Table tab
+  output$tdt <- DT::renderDataTable({
+    #locate <- DT::dataTableAjax(session, tTable())
+    DT::datatable(tTable(), 
+                  extensions = 'Buttons', 
+                  caption = "",
+                  options = list(#ajax = list(url = locate),
+                                 #dom = 'Bfrtip',
+                                 pageLength = 50,
+                                 buttons = c('csv', 'excel')
+                  ))
+  })
   
 }# end server function
 

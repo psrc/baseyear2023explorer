@@ -8,11 +8,12 @@ navbarPage(theme = shinytheme("simplex"),
                                selectInput(inputId = "s_queryBy",
                                            label = h4("Query for parcels by:"),
                                            choices = list("Parcel ID" = "parcel_id",
-                                                          "TAZ" = "zone_id",
                                                           "2010 census block" = "census_2010_block_id",
                                                           "census block (int)"= "census_block_id",
                                                           "census block group (int)" = "census_block_group_id",
-                                                          "census tract (int)" = "census_tract_id"
+                                                          "census tract (int)" = "census_tract_id",
+                                                          "TAZ" = "zone_id",
+                                                          "FAZ" = "faz_id"
                                                           ),
                                            width = '100%'
                                ),
@@ -74,10 +75,11 @@ navbarPage(theme = shinytheme("simplex"),
                                                label = h4("Query buildings by:"),
                                                choices = list("Building ID" = "building_id",
                                                               "Parcel ID" = "parcel_id",
-                                                              "TAZ" = "zone_id",
                                                               "2010 census block" = "census_2010_block_id",
                                                               "census block (int)"= "census_block_id",
-                                                              "census block group (int)" = "census_block_group_id"
+                                                              "census block group (int)" = "census_block_group_id",
+                                                              "TAZ" = "zone_id",
+                                                              "FAZ" = "faz_id"
                                                     ),
                                                width = '100%'
                                                 ),
@@ -111,5 +113,23 @@ navbarPage(theme = shinytheme("simplex"),
                             ) # end column
                         ) # end fluidRow
                     ) # end fluidPage
-           ) # end tabPanel
+           ), # end tabPanel
+           tabPanel("Tables",
+                    fluidPage(
+                            selectInput(inputId = "tbl_queryBy",
+                                        label = h4("Show summary by:"),
+                                        choices = list("region" = "region_id",
+                                                       "county" = "county_id",
+                                                       "FAZ" = "faz_id",
+                                                       "TAZ" = "zone_id",
+                                                       "2010 census block" = "census_2010_block_id",
+                                                       "census block (int)"= "census_block_id",
+                                                       "census block group (int)" = "census_block_group_id"
+                                        ),
+                                        selected = "county_id",
+                                        width = '30%'),
+                            br(),
+                            DT::dataTableOutput("tdt", height = "300px")
+                        )
+           )
 ) # end navbarPage

@@ -44,17 +44,22 @@ color.attributes <- c("bt"="building_type_id",
                       "sizeres"="residential_units", "sizenonres"="non_residential_sqft")
 
 hhs <- readRDS(file.path(wrkdir, data, hhs.file))
-buildings[hhs[, .N, by = "building_id"], households := i.N, on = "building_id"][is.na(households), households := 0]
+buildings[hhs[, .(.N, population=sum(persons)), by = "building_id"], 
+          `:=`(households = i.N, population = i.population), on = "building_id"][
+    is.na(households), `:=`(households = 0, population = 0)]
 
 jobs <- readRDS(file.path(wrkdir, data, jobs.file))
 buildings[jobs[, .N, by = "building_id"], jobs := i.N, on = "building_id"][is.na(jobs), jobs := 0]
 
 parcels.attr <- data.table(parcels.attr)
-parcels.attr[buildings[, .(households = sum(households)), by = "parcel_id"], households := i.households, on = "parcel_id"]
-parcels.attr[buildings[, .(jobs = sum(jobs)), by = "parcel_id"], jobs := i.jobs, on = "parcel_id"]
-parcels.attr[buildings[, .(DU = sum(residential_units)), by = "parcel_id"], residential_units := i.DU, on = "parcel_id"]
-parcels.attr[buildings[, .(nrsqft = sum(non_residential_sqft)), by = "parcel_id"], non_residential_sqft := i.nrsqft, on = "parcel_id"]
-#parcels.attr$secondLocationID <- paste(as.character(parcels.attr$parcel_id), "_selectedLayer", sep = "")
+parcels.attr[buildings[, .(households = sum(households), jobs = sum(jobs), 
+                           DU = sum(residential_units), nrsqft = sum(non_residential_sqft),
+                           pop = sum(population)
+                           ), by = "parcel_id"], 
+             `:=`(households = i.households, jobs = i.jobs, residential_units = i.DU, 
+                  non_residential_sqft = i.nrsqft, population = i.pop), 
+             on = "parcel_id"]
+parcels.attr[, region_id := 1]
 
 buildings <- merge(buildings, building_types, by = "building_type_id")
 buildings <- merge(buildings, parcels.attr[, c("parcel_id", setdiff(colnames(parcels.attr), colnames(buildings))), with = FALSE], by = "parcel_id")
