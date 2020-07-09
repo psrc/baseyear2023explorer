@@ -8,7 +8,7 @@ process.households <- TRUE
 process.jobs <- TRUE
 
 parcels.file.name <- "parcels.csv"
-buildings.file.name <- "imputed_buildings_lodes_match_20200616.csv"
+buildings.file.name <- "imputed_buildings_lodes_match_20200707.csv"
 households.file.name <- "households.csv"
 jobs.file.name <- "jobs.csv"
 

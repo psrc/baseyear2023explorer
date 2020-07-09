@@ -1,7 +1,7 @@
 library(data.table)
-setwd("~/psrc/R/shinyserver/base_year_2018/data")
+setwd("~/psrc/R/shinyserver/baseyear2018explorer/data")
 
-pcl <- fread("prclxy1.csv")
+pcl <- fread("prclxy.csv")
 setnames(pcl, "PIN", "parcel_id")
 setnames(pcl, "LATITUDE", "lat")
 setnames(pcl, "LONGITUDE", "lon")

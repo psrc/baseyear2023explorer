@@ -1,7 +1,7 @@
-For the coordinates, convert the file prclxy1.dbf into csv 
+For the coordinates, convert the file prclxy.dbf into csv 
     - dbf file in DataTeam/Projects/2018_base_year/Region/May2020/map
     - conversion e.g. using dbf2csv.py from https://gist.github.com/bertspaan/8220892
     
-Run prepare_parcels_geo.R to convert the prclxy1.csv into an rds file.
+Run prepare_parcels_geo.R to convert the prclxy.csv into an rds file.
 
 Run convert_datasets.R to convert the remaining datasets from csv into rds. 
