@@ -101,6 +101,7 @@ function(input, output, session) {
       #        bldg_sqft = building_sqft, 
                nonres_sqft = non_residential_sqft,
                HH = households,
+               Pop = population,
       #         Jobs = jobs,
       #        num_bldgs = number_of_buildings,
                DU = residential_units
@@ -115,8 +116,8 @@ function(input, output, session) {
               lat = round(lat, 4),
               lon = round(lon, 4)
        ) %>%
-      select(cnty, parcel_id, parcel_fips, tract_id, block_group_id, block_id, census_2010_block, zone_id, 
-             parcel_sqft, LUtype, use_code, land_value, DU, HH, nonres_sqft, jobs, lat,lon)
+      select(cnty, parcel_id, parcel_fips, tract_id, block_group_id, block_id, census_2010_block, zone_id, faz_id, 
+             parcel_sqft, LUtype, use_code, land_value, DU, HH, Pop, nonres_sqft, jobs, lat,lon)
   }
 
   # Search by Number -------------------------------------------------------- 
