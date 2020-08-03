@@ -11,7 +11,7 @@ library(data.table)
 library(sf)
 
 wrkdir <- '/home/shiny/apps/' # shiny path
-wrkdir <- '/Users/hana/psrc/R/shinyserver'
+#wrkdir <- '/Users/hana/psrc/R/shinyserver'
 
 #data <- 'base_year_2018/data'
 data <- 'baseyear2018explorer/data'
