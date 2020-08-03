@@ -131,5 +131,51 @@ navbarPage(theme = shinytheme("simplex"),
                             br(),
                             DT::dataTableOutput("tdt", height = "300px")
                         )
-           )
+           ),
+           tabPanel("Spatial Indicators",
+                    tags$head(tags$script(src="gomap.js")),
+                    fluidPage(
+                        #fluidRow(
+                        #    h4("Show spatial indicators by geography")
+                        #),
+                        fluidRow(
+                            column(width = 2,
+                                   selectInput(inputId = "pol_queryBy",
+                                               label = h4("Geography:"),
+                                               choices = list("FAZ" = "faz_id",
+                                                              "TAZ" = "zone_id"
+                                               ),
+                                               width = '100%'
+                                   ),
+                                   br(),
+                                   selectInput(inputId = "pol_indicator",
+                                               label = h4("Indicator:"),
+                                               choices = list("household income" = "median_income",
+                                                              "household size" = "average_hh_size",
+                                                              "total households" = "tot_households",
+                                                              "total population" = "tot_population",
+                                                              "total jobs" = "tot_jobs",
+                                                              "non-home-based jobs" = "nonHB_jobs",
+                                                              "home-based jobs" = "home_based_jobs",
+                                                              "population density" = "population_per_acre",
+                                                              "jobs density" = "jobs_per_acre",
+                                                              "% low income" = "percent_low_income",
+                                                              "% high income" = "percent_high_income"
+                                               ),
+                                               width = '100%'
+                                   ),
+                                   actionButton(inputId = "pol_goButton",
+                                                label = "Enter"),
+                                   actionButton(inputId = "pol_clearButton",
+                                                label = "Clear"),
+                                   br(),
+                                   br(),
+                                   br()
+                            ), # end column
+                            column(width = 10,
+                                   leafletOutput("pol_map", height = "725px")
+                            ) # end column
+                        ), # end fluidRow
+                    ) # end fluidPage
+           ) # end tabPanel
 ) # end navbarPage

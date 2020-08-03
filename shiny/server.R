@@ -527,6 +527,79 @@ function(input, output, session) {
                   ))
   })
   
+  # Polygon tab
+  ##############
+  map.layers <- function(proxy, shapefile, mappalette, indname, popup, digits = 0){
+    proxy %>% clearShapes() %>% clearControls() %>% 
+      addPolygons(data = shapefile,
+                          fillColor = ~mappalette(shapefile[[indname]]), 
+                          fillOpacity = 0.7,
+                          stroke = TRUE,
+                          color = "#8a8a95",
+                          weight = 1,
+                          popup = popup,
+                          layerId = ~name_id) %>%
+      addLegend("bottomright",
+                pal = mappalette,
+                values = mappalette(shapefile[[indname]]),
+                title = indname,
+                opacity =1,
+                labFormat = labelFormat(big.mark = ",", digits = digits))
+  }
+  
+  output$pol_map <- renderLeaflet({
+    leaflet.blank()
+  })
+  map.colorBins <- function(indname, indvalues){
+    max.bin <- max(abs(indvalues), na.rm = TRUE)
+    digits <- 0
+    if(indname %in% names(polmap.settings) && "breaks" %in% names(polmap.settings[[indname]])) {
+      absbreaks <- polmap.settings[[indname]]$breaks
+      if(max.bin > max(absbreaks)) absbreaks <- c(absbreaks, max.bin)
+    } else {
+      absbreaks <- (sqrt(max.bin)*c(0, 0.1, 0.2,0.4, 0.6, 0.8, 1.01))^2 # breaks on sqrt scale
+    }
+    if(indname %in% names(polmap.settings) && "digits" %in% names(polmap.settings[[indname]]))
+      digits <- polmap.settings[[indname]]$digits
+    return(list(color="Reds", bin=absbreaks, digits = digits))
+  }
+  
+  get.polmap.popup <- function(shp, indname, digits) {
+    popup <- paste0("<strong>ID: </strong>", shp$name_id,
+           "<br><strong>", indname,": </strong>", prettyNum(round(shp[[indname]], digits), big.mark = ","))
+    if(indname != "tot_households")
+      popup <- paste0(popup,
+           "<br><strong>", "total HH",": </strong>", prettyNum(round(shp$tot_households, digits), big.mark = ","))
+    if(indname != "tot_population")
+      popup <- paste0(popup,
+           "<br><strong>", "total pop",": </strong>", prettyNum(round(shp$tot_population, digits), big.mark = ","))
+    if(indname != "tot_jobs")
+      popup <- paste0(popup,
+           "<br><strong>", "total jobs",": </strong>", prettyNum(round(shp$tot_jobs, digits), big.mark = ","))
+  }
+  
+  compute.indicator <- function(indicator, geo.id){
+    select.columns <- unique(c("name_id", indicator, "tot_households", "tot_population", "tot_jobs"))
+    result <- indicators.dt[[geo.id]][, select.columns, with = FALSE]
+    #result <- dt[, .(ind = mean(eval(parse(text=indicator)))), by = list(name_id = eval(parse(text=geo.id)))]
+    result
+  }
+  
+  # GO button
+  observeEvent(input$pol_goButton, {
+    dt <- compute.indicator(input$pol_indicator, input$pol_queryBy)
+    tshape <- merge(shapes[[input$pol_queryBy]], dt, by = "name_id")
+    colorBinResult <- map.colorBins(input$pol_indicator, dt[[input$pol_indicator]])
+    pal <- colorBin(palette = colorBinResult$color, bins = colorBinResult$bin)
+    popup <- get.polmap.popup(tshape, input$pol_indicator, colorBinResult$digits)
+    map <- map.layers(leafletProxy("pol_map"), tshape, pal, input$pol_indicator, 
+                      popup = popup, digits = colorBinResult$digits)
+  })
+  
+  # clear map
+  observeEvent(input$pol_clearButton, {
+    leafletProxy("pol_map") %>% clearShapes() %>% clearControls()
+  })
 }# end server function
 
 
