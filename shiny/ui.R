@@ -152,15 +152,17 @@ navbarPage(theme = shinytheme("simplex"),
                                                label = h4("Indicator:"),
                                                choices = list("household income" = "median_income",
                                                               "household size" = "average_hh_size",
+                                                              "population density" = "population_per_acre",
+                                                              "% low income" = "percent_low_income",
+                                                              "% high income" = "percent_high_income",
                                                               "total households" = "tot_households",
                                                               "total population" = "tot_population",
                                                               "total jobs" = "tot_jobs",
                                                               "non-home-based jobs" = "nonHB_jobs",
                                                               "home-based jobs" = "home_based_jobs",
-                                                              "population density" = "population_per_acre",
                                                               "jobs density" = "jobs_per_acre",
-                                                              "% low income" = "percent_low_income",
-                                                              "% high income" = "percent_high_income"
+                                                              "jobs per capita" = "jobs_per_capita"
+
                                                ),
                                                width = '100%'
                                    ),

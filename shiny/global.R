@@ -118,13 +118,15 @@ for(gid in c("zone_id", "faz_id")){
     indicators.dt[[gid]][, `:=`(percent_low_income = 100*low_income/tot_households, 
                                 percent_high_income = 100*high_income/tot_households
                                 )]
+    indicators.dt[[gid]][tot_population > 0, `:=`(jobs_per_capita = tot_jobs/tot_population)]
 }
 polmap.settings <- list(median_income = list(breaks = c(0, 50000, 65000, 80000, 100000, 120000), digits = 0),
                         average_hh_size = list(breaks = c(1, 1.5, 2.5, 3.5), digits = 1),
                         population_per_acre = list(breaks = c(0, 1, 5, 10, 15, 20), digits = 1),
                         jobs_per_acre = list(breaks = c(0, 0.5, 1, 5, 10, 15), digits = 1),
                         percent_low_income = list(breaks = c(0, 25, 50, 75, 80, 100), digits = 1),
-                        percent_high_income = list(breaks = c(0, 25, 50, 75, 80, 100), digits = 1)
+                        percent_high_income = list(breaks = c(0, 25, 50, 75, 80, 100), digits = 1), 
+                        jobs_per_capita = list(breaks = c(0, 0.1, 0.5, 0.8, 1, 2), digits = 1)
                         )
 
 rm(attr)
