@@ -161,7 +161,8 @@ navbarPage(theme = shinytheme("simplex"),
                                                               "non-home-based jobs" = "nonHB_jobs",
                                                               "home-based jobs" = "home_based_jobs",
                                                               "jobs density" = "jobs_per_acre",
-                                                              "jobs per capita" = "jobs_per_capita"
+                                                              "jobs per capita" = "jobs_per_capita",
+                                                              "land value per sf"="land_value_per_sf"
 
                                                ),
                                                width = '100%'

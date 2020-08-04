@@ -109,14 +109,18 @@ for(gid in c("zone_id", "faz_id")){
                                        by = list(name_id = eval(parse(text=gid)))],
                                   by = "name_id", all = TRUE)
     indicators.dt[[gid]] <- merge(indicators.dt[[gid]], 
-                                  parcels.attr[, .(acres = sum(parcel_sqft)/43560),
+                                  parcels.attr[, sqft_for_land_value := parcel_sqft * (land_value > 0)][, 
+                                                .(acres = sum(parcel_sqft)/43560,
+                                                   land_value = sum(land_value/1000),
+                                                   sqft_for_value = sum(sqft_for_land_value/1000)),
                                                by = list(name_id = eval(parse(text=gid)))], 
                                   by = "name_id")
     indicators.dt[[gid]][acres > 0, `:=`(population_per_acre = tot_population/acres,
                                         jobs_per_acre = tot_jobs/acres
                                         )]
     indicators.dt[[gid]][, `:=`(percent_low_income = 100*low_income/tot_households, 
-                                percent_high_income = 100*high_income/tot_households
+                                percent_high_income = 100*high_income/tot_households,
+                                land_value_per_sf = land_value/sqft_for_value
                                 )]
     indicators.dt[[gid]][tot_population > 0, `:=`(jobs_per_capita = tot_jobs/tot_population)]
 }
@@ -126,7 +130,8 @@ polmap.settings <- list(median_income = list(breaks = c(0, 50000, 65000, 80000, 
                         jobs_per_acre = list(breaks = c(0, 0.5, 1, 5, 10, 15), digits = 1),
                         percent_low_income = list(breaks = c(0, 25, 50, 75, 80, 100), digits = 1),
                         percent_high_income = list(breaks = c(0, 25, 50, 75, 80, 100), digits = 1), 
-                        jobs_per_capita = list(breaks = c(0, 0.1, 0.5, 0.8, 1, 2), digits = 1)
+                        jobs_per_capita = list(breaks = c(0, 0.1, 0.5, 0.8, 1, 2), digits = 1),
+                        land_value_per_sf = list(digits = 0)
                         )
 
 rm(attr)
