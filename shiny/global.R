@@ -21,6 +21,7 @@ parcel.att <- 'parcels.rds'
 blds.file <- 'buildings.rds'
 hhs.file <- 'households.rds'
 jobs.file <- 'jobs.rds'
+persons.file <- 'persons.rds'
 
 parcels <- readRDS(file.path(wrkdir, data, parcel.main))
 attr <- readRDS(file.path(wrkdir, data, parcel.att))
@@ -74,7 +75,7 @@ buildings[, Nbld := NULL]
 
 coordinates <- SpatialPointsDataFrame(parcels.attr[!is.na(lon),.(lon, lat)], parcels.attr[!is.na(lon)])
 
-# 
+# prepare for spatial indicators
 shapes <- list(zone_id = sf::st_read(file.path(wrkdir, data, "gis", "TAZ_2010_WGS84.shp"),
                             stringsAsFactors = FALSE),
                faz_id = sf::st_read(file.path(wrkdir, data, "gis", "FAZ_2010_WGS84.shp"),
@@ -89,6 +90,10 @@ hhs[income < 0, income := 0]
 
 jobs[buildings, parcel_id := i.parcel_id, on = "building_id"]
 jobs[parcels.attr, `:=`(zone_id = i.zone_id, faz_id = i.faz_id), on = "parcel_id"]
+
+pers <- readRDS(file.path(wrkdir, data, persons.file))
+pers[hhs, `:=`(zone_id = i.zone_id, faz_id = i.faz_id), on = "household_id"]
+
 # pre-compute indicators
 indicators.dt <- list()
 incquant <- quantile(hhs$income, probs = c(0.25, 0.75), na.rm = TRUE)
@@ -108,6 +113,11 @@ for(gid in c("zone_id", "faz_id")){
                                               home_based_jobs = sum(home_based_status)), 
                                        by = list(name_id = eval(parse(text=gid)))],
                                   by = "name_id", all = TRUE)
+    indicators.dt[[gid]] <- merge(indicators.dt[[gid]], 
+                                  pers[, .(average_age = mean(age)), 
+                                       by = list(name_id = eval(parse(text=gid)))],
+                                  by = "name_id", all = TRUE)
+    
     indicators.dt[[gid]] <- merge(indicators.dt[[gid]], 
                                   parcels.attr[, sqft_for_land_value := parcel_sqft * (land_value > 0)][, 
                                                 .(acres = sum(parcel_sqft)/43560,
@@ -131,7 +141,8 @@ polmap.settings <- list(median_income = list(breaks = c(0, 50000, 65000, 80000, 
                         percent_low_income = list(breaks = c(0, 25, 50, 75, 80, 100), digits = 1),
                         percent_high_income = list(breaks = c(0, 25, 50, 75, 80, 100), digits = 1), 
                         jobs_per_capita = list(breaks = c(0, 0.1, 0.5, 0.8, 1, 2), digits = 1),
-                        land_value_per_sf = list(digits = 0)
+                        land_value_per_sf = list(digits = 0),
+                        average_age = list(breaks = c(0, 25, 35, 45, 55, 65), digits = 1)
                         )
 
 rm(attr)

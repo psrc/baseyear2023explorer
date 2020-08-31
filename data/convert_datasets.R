@@ -2,15 +2,17 @@
 
 library(data.table)
 
-process.parcels <- TRUE
-process.buildings <- TRUE
-process.households <- TRUE
-process.jobs <- TRUE
+process.parcels <- FALSE
+process.buildings <- FALSE
+process.households <- FALSE
+process.jobs <- FALSE
+process.persons <- TRUE
 
 parcels.file.name <- "parcels.csv"
 buildings.file.name <- "imputed_buildings_lodes_match_20200707.csv"
 households.file.name <- "households.csv"
 jobs.file.name <- "jobs.csv"
+persons.file.name <- "persons.csv"
 
 if(process.parcels){
     pclattr <- fread(parcels.file.name)
@@ -28,6 +30,11 @@ if(process.buildings){
 if(process.households){
     hhs <- fread(households.file.name)
     saveRDS(hhs, "households.rds")
+}
+
+if(process.persons){
+    hhs <- fread(persons.file.name)
+    saveRDS(hhs, "persons.rds")
 }
 
 if(process.jobs){

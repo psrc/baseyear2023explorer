@@ -592,7 +592,7 @@ function(input, output, session) {
     colorBinResult <- map.colorBins(input$pol_indicator, dt[[input$pol_indicator]])
     pal <- colorBin(palette = colorBinResult$color, bins = colorBinResult$bin)
     popup <- get.polmap.popup(tshape, input$pol_indicator, colorBinResult$digits)
-    map <- map.layers(leafletProxy("pol_map"), tshape, pal, input$pol_indicator, 
+    map.layers(leafletProxy("pol_map"), tshape, pal, input$pol_indicator, 
                       popup = popup, digits = colorBinResult$digits)
   })
   

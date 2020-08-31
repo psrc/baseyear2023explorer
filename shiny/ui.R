@@ -152,6 +152,7 @@ navbarPage(theme = shinytheme("simplex"),
                                                label = h4("Indicator:"),
                                                choices = list("household income" = "median_income",
                                                               "household size" = "average_hh_size",
+                                                              "average age" = "average_age",
                                                               "population density" = "population_per_acre",
                                                               "% low income" = "percent_low_income",
                                                               "% high income" = "percent_high_income",
@@ -175,8 +176,7 @@ navbarPage(theme = shinytheme("simplex"),
                                    br(),
                                    br()
                             ), # end column
-                            column(width = 10,
-                                   leafletOutput("pol_map", height = "725px")
+                            column(width = 10, leafletOutput("pol_map", height = "725px")
                             ) # end column
                         ), # end fluidRow
                     ) # end fluidPage
