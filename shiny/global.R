@@ -9,6 +9,7 @@ library(geoshaper)
 library(sp)
 library(data.table)
 library(sf)
+library(rmapshaper)
 
 wrkdir <- '/home/shiny/apps/' # shiny path
 #wrkdir <- '/Users/hana/psrc/R/shinyserver'
@@ -78,10 +79,10 @@ buildings[, Nbld := NULL]
 coordinates <- SpatialPointsDataFrame(parcels.attr[!is.na(lon),.(lon, lat)], parcels.attr[!is.na(lon)])
 
 # prepare for spatial indicators
-shapes <- list(zone_id = sf::st_read(file.path(wrkdir, data, "gis", "TAZ_2010_WGS84.shp"),
-                            stringsAsFactors = FALSE),
-               faz_id = sf::st_read(file.path(wrkdir, data, "gis", "FAZ_2010_WGS84.shp"),
-                                    stringsAsFactors = FALSE)
+shapes <- list(zone_id = rmapshaper::ms_simplify(sf::st_read(file.path(wrkdir, data, "gis", "TAZ_2010_WGS84.shp"),
+                            stringsAsFactors = FALSE), keep = 0.005),
+               faz_id = rmapshaper::ms_simplify(sf::st_read(file.path(wrkdir, data, "gis", "FAZ_2010_WGS84.shp"),
+                                    stringsAsFactors = FALSE))
                 )
 shapes$zone_id$name_id <- shapes$zone_id$TAZ
 shapes$faz_id$name_id <- shapes$faz_id$FAZ10
