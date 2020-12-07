@@ -567,6 +567,10 @@ function(input, output, session) {
   get.polmap.popup <- function(shp, indname, digits) {
     popup <- paste0("<strong>ID: </strong>", shp$name_id,
            "<br><strong>", indname,": </strong>", prettyNum(round(shp[[indname]], digits), big.mark = ","))
+    if(indname %in% race.indicators) { # add the other races into popup
+      for(ind in race.indicators)
+        if (indname != ind) popup <- paste0(popup, "<br><strong>", ind, ": </strong>", prettyNum(round(shp[[ind]], digits), big.mark = ","))
+    }
     if(indname != "tot_households")
       popup <- paste0(popup,
            "<br><strong>", "total HH",": </strong>", prettyNum(round(shp$tot_households, digits), big.mark = ","))
@@ -580,6 +584,7 @@ function(input, output, session) {
   
   compute.indicator <- function(indicator, geo.id){
     select.columns <- unique(c("name_id", indicator, "tot_households", "tot_population", "tot_jobs"))
+    if(indicator %in% race.indicators) select.columns <- unique(c(select.columns, race.indicators))
     result <- indicators.dt[[geo.id]][, select.columns, with = FALSE]
     #result <- dt[, .(ind = mean(eval(parse(text=indicator)))), by = list(name_id = eval(parse(text=geo.id)))]
     result

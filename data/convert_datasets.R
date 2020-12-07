@@ -6,13 +6,16 @@ process.parcels <- FALSE
 process.buildings <- FALSE
 process.households <- FALSE
 process.jobs <- FALSE
-process.persons <- TRUE
+process.persons <- FALSE
+process.agents.with.race <- TRUE
 
 parcels.file.name <- "parcels.csv"
 buildings.file.name <- "imputed_buildings_lodes_match_20200707.csv"
 households.file.name <- "households.csv"
 jobs.file.name <- "jobs.csv"
 persons.file.name <- "persons.csv"
+households.with.race.file.name <- "householdsWR.csv"
+persons.with.race.file.name <- "personsWR.csv"
 
 if(process.parcels){
     pclattr <- fread(parcels.file.name)
@@ -36,6 +39,18 @@ if(process.persons){
     hhs <- fread(persons.file.name)
     saveRDS(hhs, "persons.rds")
 }
+
+if(process.agents.with.race) {
+    hhs <- fread(households.with.race.file.name)
+    saveRDS(hhs, "households_with_race.rds")
+    pers <- fread(persons.with.race.file.name)
+    if(length(grep(":i4", colnames(pers))) > 0) { # remove ":*" from colnames
+        spl <- strsplit(colnames(pers), ":")
+        colnames(pers) <- sapply(spl, function(x) x[1])
+    }
+    saveRDS(pers, "persons_with_race.rds")
+}
+
 
 if(process.jobs){
     hhs <- fread(jobs.file.name)
