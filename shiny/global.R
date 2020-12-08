@@ -160,11 +160,12 @@ for(gid in c("zone_id", "faz_id")){
     indicators.dt[[gid]][, `:=`(percent_low_income = 100*low_income/tot_households, 
                                 percent_high_income = 100*high_income/tot_households,
                                 land_value_per_sf = land_value/sqft_for_value,
-                                percent_non_white_mixed = 100*(pop_rc_total - pop_rc_white)/pop_rc_total,
-                                percent_non_white = 100*(pop_rc_alone - pop_rc_white)/pop_rc_alone,
-                                percent_black = 100*pop_rc_black/pop_rc_alone,
-                                percent_asian = 100*pop_rc_asian/pop_rc_alone,
-                                percent_white = 100*pop_rc_white/pop_rc_alone
+                                #percent_non_white_mixed = 100*(pop_rc_total - pop_rc_white)/pop_rc_total,
+                                #percent_non_white = 100*(pop_rc_alone - pop_rc_white)/pop_rc_alone,
+                                percent_black = 100*pop_rc_black/pop_rc_total,
+                                percent_asian = 100*pop_rc_asian/pop_rc_total,
+                                percent_white = 100*pop_rc_white/pop_rc_total,
+                                percent_other = 100*(pop_rc_total - (pop_rc_white + pop_rc_black + pop_rc_asian))/pop_rc_total
                                 )]
     indicators.dt[[gid]][tot_population > 0, `:=`(jobs_per_capita = tot_jobs/tot_population)]
 }
@@ -177,8 +178,7 @@ polmap.settings <- list(median_income = list(breaks = c(0, 50000, 65000, 80000, 
                         average_age = list(breaks = c(0, 25, 35, 45, 55, 65), digits = 1)
                         )
 # percent settings
-race.indicators <- c("percent_non_white", "percent_black", 
-                     "percent_asian", "percent_white", "percent_non_white_mixed")
+race.indicators <- c("percent_black", "percent_asian", "percent_white", "percent_other")
 for(ind in c("percent_low_income", "percent_high_income", race.indicators))
     polmap.settings[[ind]] <- list(breaks = c(0, 10, 25, 50, 75, 80, 90, 100), digits = 1)
 
