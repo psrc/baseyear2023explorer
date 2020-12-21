@@ -183,5 +183,9 @@ navbarPage(theme = shinytheme("simplex"),
                             ) # end column
                         ), # end fluidRow
                     ) # end fluidPage
-           ) # end tabPanel
+            ), # end tabPanel
+            tabPanel("Graphs",
+                     htmlOutput('graphgvis'),
+                     HTML("<br/><i><small>*If you don't see a graph above, make sure Adobe Flash Player is installed and enabled in your browser.</small></i>")
+            )
 ) # end navbarPage

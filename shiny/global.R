@@ -10,9 +10,10 @@ library(sp)
 library(data.table)
 library(sf)
 library(rmapshaper)
+library(googleVis)
 
 wrkdir <- '/home/shiny/apps/' # shiny path
-#wrkdir <- '/Users/hana/psrc/R/shinyserver'
+wrkdir <- '/Users/hana/psrc/R/shinyserver'
 
 #data <- 'base_year_2018/data'
 data <- 'baseyear2018explorer/data'
@@ -169,6 +170,20 @@ for(gid in c("zone_id", "faz_id")){
                                 )]
     indicators.dt[[gid]][tot_population > 0, `:=`(jobs_per_capita = tot_jobs/tot_population)]
 }
+chart.geo <- "faz_id"
+indicators.chart <- copy(indicators.dt[[chart.geo]])
+setnames(indicators.chart, "name_id", chart.geo)
+indicators.chart[, `:=`(Year = 2018)]
+#zones <- unique(parcels.attr[faz_id > 0, .(zone_id, faz_id, county_id)])
+zones <- unique(parcels.attr[faz_id > 0, .(faz_id, county_id)])
+zones[data.table(county_id = c(33, 35, 53, 60), county = c("King", "Kitsap", "Pierce", "Snohomish")), 
+      county := i.county, on = "county_id"][, county_id := NULL]
+zones <- zones[!duplicated(zones[[chart.geo]])]
+indicators.chart <- merge(indicators.chart[faz_id > 0], zones, by = chart.geo)
+fcols <- c("zone_id", "faz_id", "county")
+fcols <- c("faz_id", "county")
+indicators.chart[, (fcols) := (lapply(.SD, as.factor)), .SDcols = fcols]
+
 polmap.settings <- list(median_income = list(breaks = c(0, 50000, 65000, 80000, 100000, 120000), digits = 0),
                         average_hh_size = list(breaks = c(1, 1.5, 2.5, 3.5), digits = 1),
                         population_per_acre = list(breaks = c(0, 1, 5, 10, 15, 20), digits = 1),
