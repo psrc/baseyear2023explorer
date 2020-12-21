@@ -176,7 +176,7 @@ setnames(indicators.chart, "name_id", chart.geo)
 indicators.chart[, `:=`(Year = 2018)]
 #zones <- unique(parcels.attr[faz_id > 0, .(zone_id, faz_id, county_id)])
 zones <- unique(parcels.attr[faz_id > 0, .(faz_id, county_id)])
-zones[data.table(county_id = c(33, 35, 53, 60), county = c("King", "Kitsap", "Pierce", "Snohomish")), 
+zones[data.table(county_id = c(33, 35, 53, 61), county = c("King", "Kitsap", "Pierce", "Snohomish")), 
       county := i.county, on = "county_id"][, county_id := NULL]
 zones <- zones[!duplicated(zones[[chart.geo]])]
 indicators.chart <- merge(indicators.chart[faz_id > 0], zones, by = chart.geo)
