@@ -2,20 +2,20 @@
 
 library(data.table)
 
-process.parcels <- FALSE
-process.buildings <- FALSE
-process.households <- FALSE
-process.jobs <- FALSE
-process.persons <- FALSE
-process.agents.with.race <- TRUE
+process.parcels <- TRUE
+process.buildings <- TRUE
+process.households <- TRUE
+process.jobs <- TRUE
+process.persons <- TRUE
+process.agents.with.race <- FALSE
 
 parcels.file.name <- "parcels.csv"
-buildings.file.name <- "imputed_buildings_lodes_match_20200707.csv"
+buildings.file.name <- "imputed_buildings_lodes_match_20210302.csv"
 households.file.name <- "households.csv"
 jobs.file.name <- "jobs.csv"
 persons.file.name <- "persons.csv"
-households.with.race.file.name <- "householdsWR.csv"
-persons.with.race.file.name <- "personsWR.csv"
+#households.with.race.file.name <- "householdsWR.csv"
+#persons.with.race.file.name <- "personsWR.csv"
 
 if(process.parcels){
     pclattr <- fread(parcels.file.name)
