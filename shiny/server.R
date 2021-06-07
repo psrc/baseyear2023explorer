@@ -360,7 +360,8 @@ function(input, output, session) {
                                      "<br>DU:         ", as.integer(residential_units),
                                      "<br>HHs:         ", as.integer(households),
                                      "<br>Non-res sf: ", as.integer(non_residential_sqft),
-                                     "<br>Jobs: ", as.integer(jobs)
+                                     "<br>Jobs: ", as.integer(jobs),
+                                     "<br>TOD: ", tod_name
                             )
   # display markers
   observe({
@@ -412,7 +413,8 @@ function(input, output, session) {
   #                          levels=building_types_selection[,1])
   palette.bt <- colorFactor(rainbow(nrow(building_types)), 
                             levels=building_types[,building_type_id])
-  
+  palette.tod <- colorFactor(rainbow(nrow(tod_data))[c(5,2,3,4,1,6,7)], # re-order colors so that no-tod is blue
+                            levels=tod_data[,tod_id])
   
   # enable/disable color selection depending on clustering
   observeEvent(input$cluster, {

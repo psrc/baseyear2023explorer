@@ -46,8 +46,11 @@ building_types_selection <- building_types_selection[ordered_building_type_names
 building_types <- data.table(building_types)
 setkey(building_types, building_type_id)
 
+tod_data <- data.table(tod_id = 0:6, tod_name = c("No TOD", "BRT", "Commuter Rail", NA, "Light Rail", "Ferry", "RGC"))
+
 color.attributes <- c("bt"="building_type_id", 
-                      "sizeres"="residential_units", "sizenonres"="non_residential_sqft")
+                      "sizeres"="residential_units", "sizenonres"="non_residential_sqft", 
+                      "tod" = "tod_id")
 
 hhs <- readRDS(file.path(wrkdir, data, hhs.file))
 buildings[hhs[, .(.N, population=sum(persons)), by = "building_id"], 
@@ -69,7 +72,8 @@ parcels.attr[, region_id := 1]
 
 buildings <- merge(buildings, building_types, by = "building_type_id")
 buildings <- merge(buildings, parcels.attr[, c("parcel_id", setdiff(colnames(parcels.attr), colnames(buildings))), with = FALSE], by = "parcel_id")
-
+buildings <- merge(buildings, tod_data, by = "tod_id")
+                   
 # add jitter to coordinates where there are multiple buildings per parcel
 buildings[, Nbld := .N, by = parcel_id]
 set.seed(1234)
