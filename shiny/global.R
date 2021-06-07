@@ -60,6 +60,7 @@ buildings[hhs[, .(.N, population=sum(persons)), by = "building_id"],
 jobs <- readRDS(file.path(wrkdir, data, jobs.file))
 buildings[jobs[, .N, by = "building_id"], jobs := i.N, on = "building_id"][is.na(jobs), jobs := 0]
 
+# add attributes to parcels
 parcels.attr <- data.table(parcels.attr)
 parcels.attr[buildings[, .(households = sum(households), jobs = sum(jobs), 
                            DU = sum(residential_units), nrsqft = sum(non_residential_sqft),
@@ -69,6 +70,7 @@ parcels.attr[buildings[, .(households = sum(households), jobs = sum(jobs),
                   non_residential_sqft = i.nrsqft, population = i.pop), 
              on = "parcel_id"]
 parcels.attr[, region_id := 1]
+parcels.attr[, census_2010_block_group_id := substr(census_2010_block_id, 1, 12)]
 
 buildings <- merge(buildings, building_types, by = "building_type_id")
 buildings <- merge(buildings, parcels.attr[, c("parcel_id", setdiff(colnames(parcels.attr), colnames(buildings))), with = FALSE], by = "parcel_id")

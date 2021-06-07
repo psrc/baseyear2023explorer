@@ -162,8 +162,13 @@ function(input, output, session) {
     } else {
       numItems <- scan(text = values$ids, sep = ",", quiet = TRUE)
     }
-    expr <- lazyeval::interp(~col %in% numItems, col = as.name(sQueryBy()))
-    parcels.filter <- parcels.attr %>% filter_(expr) 
+    attrs <- sQueryBy()
+    if(attrs == "school_id") 
+      parcels.filter <- parcels.attr %>% filter(elem_id %in% numItems | hschool_id %in% numItems | mschool_id %in% numItems)
+    else {
+      expr <- lazyeval::interp(~col %in% numItems, col = as.name(attrs))
+      parcels.filter <- parcels.attr %>% filter_(expr)
+    }
     
     if (nrow(parcels.filter) > 5000){
       parcels.filter %>% sample_n(5000)
