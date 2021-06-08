@@ -64,17 +64,17 @@ buildings[jobs[, .N, by = "building_id"], jobs := i.N, on = "building_id"][is.na
 parcels.attr <- data.table(parcels.attr)
 parcels.attr[buildings[, .(households = sum(households), jobs = sum(jobs), 
                            DU = sum(residential_units), nrsqft = sum(non_residential_sqft),
-                           pop = sum(population)
+                           pop = sum(population), Nblds = .N
                            ), by = "parcel_id"], 
              `:=`(households = i.households, jobs = i.jobs, residential_units = i.DU, 
-                  non_residential_sqft = i.nrsqft, population = i.pop), 
+                  non_residential_sqft = i.nrsqft, population = i.pop, Nblds = i.Nblds), 
              on = "parcel_id"]
 parcels.attr[, region_id := 1]
 parcels.attr[, census_2010_block_group_id := substr(census_2010_block_id, 1, 12)]
+parcels.attr <- merge(parcels.attr, tod_data, by = "tod_id")
 
 buildings <- merge(buildings, building_types, by = "building_type_id")
 buildings <- merge(buildings, parcels.attr[, c("parcel_id", setdiff(colnames(parcels.attr), colnames(buildings))), with = FALSE], by = "parcel_id")
-buildings <- merge(buildings, tod_data, by = "tod_id")
                    
 # add jitter to coordinates where there are multiple buildings per parcel
 buildings[, Nbld := .N, by = parcel_id]

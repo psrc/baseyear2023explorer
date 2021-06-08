@@ -94,7 +94,7 @@ function(input, output, session) {
       rename(parcel_fips = parcel_id_fips,
               cnty = county_id,
               tract_id = census_tract_id,
-              block_group_id = census_block_group_id,
+              BG_id = census_block_group_id,
               block_id = census_block_id,
              census_2010_block = census_2010_block_id,
               LUtype = land_use_type_id,
@@ -103,8 +103,8 @@ function(input, output, session) {
                HH = households,
                Pop = population,
       #         Jobs = jobs,
-      #        num_bldgs = number_of_buildings,
-               DU = residential_units
+               DU = residential_units,
+                TOD = tod_name
       #        gwthctr_id = growth_center_id,
       #        area = AREA,
       #        shape_area = Shape_Area
@@ -116,8 +116,8 @@ function(input, output, session) {
               lat = round(lat, 4),
               lon = round(lon, 4)
        ) %>%
-      select(cnty, parcel_id, parcel_fips, tract_id, block_group_id, block_id, census_2010_block, zone_id, faz_id, 
-             parcel_sqft, LUtype, use_code, land_value, DU, HH, Pop, nonres_sqft, jobs, lat,lon)
+      select(parcel_id, parcel_fips, cnty, city_id, faz_id, zone_id, tract_id, BG_id, block_id, census_2010_block, TOD, 
+             parcel_sqft, LUtype, use_code, land_value, DU, HH, Pop, nonres_sqft, jobs, Nblds, lat, lon)
   }
 
   # Search by Number -------------------------------------------------------- 
@@ -219,9 +219,12 @@ function(input, output, session) {
                   caption = "Click on icon in 'loc' field to zoom to parcel",
                   options = list(ajax = list(url = locate),
                                  dom = 'Bfrtip',
-                                 buttons = c('csv', 'excel')
+                                 buttons = c('csv', 'excel')#,
+                                 #lengthMenu = list(c(10, 20, -1), c('10', '20', 'All')), # does not work
+                                 #pageLength = 10
                                  ), 
-                  escape = c(1))
+                  escape = c(1)
+                  )
   })
 
   output$sum_dt <- DT::renderDataTable({
@@ -229,7 +232,8 @@ function(input, output, session) {
     if (is.null(dat) || nrow(dat) < 2) return(NULL) # don't show summary table if only one record was selected
     d <- data.table(dat)[, .(
                     id = isolate(input$s_id),
-                    buildings = .N,
+                    parcels = .N,
+                    buildings = sum(Nblds, na.rm = TRUE),
                     DU = sum(residential_units, na.rm = TRUE), 
                     HH = sum(households, na.rm = TRUE),
                     Pop = sum(population, na.rm = TRUE),
@@ -418,7 +422,7 @@ function(input, output, session) {
   #                          levels=building_types_selection[,1])
   palette.bt <- colorFactor(rainbow(nrow(building_types)), 
                             levels=building_types[,building_type_id])
-  palette.tod <- colorFactor(rainbow(nrow(tod_data))[c(5,2,3,4,1,6,7)], # re-order colors so that no-tod is blue
+  palette.tod <- colorFactor(rainbow(nrow(tod_data))[c(5,7,3,4,1,6,2)], # re-order colors so that no-tod is blue
                             levels=tod_data[,tod_id])
   
   # enable/disable color selection depending on clustering
