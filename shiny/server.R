@@ -26,9 +26,26 @@ function(input, output, session) {
     proxy %>% 
       clearMarkers() %>%
       addMarkers(data = selected.data,
+                        ~lon,
+                        ~lat,
+                        popup = popup,
+      )
+  }  
+  # show leaflet results for parcels with TOD info
+  leaflet.results.tod <- function(proxy, selected.data, popup) {
+    icons <- awesomeIcons(
+      icon = 'circle',
+      iconColor = 'black',
+      library = 'fa',
+      markerColor = selected.data$tod_color
+    )
+    proxy %>% 
+      clearMarkers() %>%
+      addAwesomeMarkers(data = selected.data,
                  ~lon,
                  ~lat,
-                 popup = popup
+                 popup = popup,
+                 icon = icons
       ) 
   }  
   
@@ -190,8 +207,15 @@ function(input, output, session) {
   observe({
     sSelected <- sSelected()
     if (is.null(sSelected) || values$ids == " ") return()
-    marker.popup <- ~paste0("<strong>Parcel ID: </strong>", as.character(parcel_id))
-    leaflet.results(leafletProxy("map"), sSelected, marker.popup)
+    color.tod <- input$color_pcl_by_tod
+    if(color.tod) {
+      marker.popup <- ~paste0("<strong>Parcel ID: </strong>", parcel_id,
+                              "<br>TOD: ", tod_name)
+      leaflet.results.tod(leafletProxy("map"), sSelected, marker.popup)
+    } else {
+      marker.popup <- ~paste0("<strong>Parcel ID: </strong>", parcel_id)
+      leaflet.results(leafletProxy("map"), sSelected, marker.popup)
+    }
   })
   
   # display parcel_ids
@@ -326,16 +350,21 @@ function(input, output, session) {
     #browser()
     subdata <- data.table(subdata)[generic_building_type_id %in% as.integer(input$BTfilter)]
     if (nrow(subdata)==0) return()
-    if(input$color %in% c("sizeres", "sizenonres")) {
-      values <- log(subdata[[color.attributes[input$color]]]+1)
-      palette.size <- colorQuantile("YlOrRd", range(values), n=9)
-      palette.name <- "palette.size"
-    } else {
-      palette.name <- paste0("palette.", input$color)
-      values <- subdata[[color.attributes[input$color]]]
-    }
     subdata[, color := NA]
-    if(nrow(subdata) > 0) subdata[, color:= do.call(palette.name, list(values))]
+    if(input$color == "tod"){
+      col <- subdata[, tod_color]
+    } else {
+      if(input$color %in% c("sizeres", "sizenonres")) {
+        values <- log(subdata[[color.attributes[input$color]]]+1)
+        palette.size <- colorQuantile("YlOrRd", range(values), n=9)
+        palette.name <- "palette.size"
+      } else {
+        palette.name <- paste0("palette.", input$color)
+        values <- subdata[[color.attributes[input$color]]]
+      }
+      col <- do.call(palette.name, list(values))
+    }
+    if(nrow(subdata) > 0) subdata[, color:= col]
     subdata
   })
   
@@ -347,16 +376,21 @@ function(input, output, session) {
     #browser()
     subdata <- data.table(subdata)[generic_building_type_id %in% as.integer(input$BTfilter)]
     if (nrow(subdata)==0) return()
-    if(input$color %in% c("sizeres", "sizenonres")) {
-      values <- log(subdata[[color.attributes[input$color]]]+1)
-      palette.size <- colorQuantile("YlOrRd", range(values), n=9)
-      palette.name <- "palette.size"
-    } else {
-      palette.name <- paste0("palette.", input$color)
-      values <- subdata[[color.attributes[input$color]]]
-    }
     subdata[, color := NA]
-    if(nrow(subdata) > 0) subdata[, color:= do.call(palette.name, list(values))]
+    if(input$color == "tod"){
+      col <- subdata[, tod_color]
+    } else {
+      if(input$color %in% c("sizeres", "sizenonres")) {
+        values <- log(subdata[[color.attributes[input$color]]]+1)
+        palette.size <- colorQuantile("YlOrRd", range(values), n=9)
+        palette.name <- "palette.size"
+      } else {
+        palette.name <- paste0("palette.", input$color)
+        values <- subdata[[color.attributes[input$color]]]
+      }
+      col <- do.call(palette.name, list(values))
+    }
+    if(nrow(subdata) > 0) subdata[, color:= col]
     subdata
   })
   
@@ -422,9 +456,7 @@ function(input, output, session) {
   #                          levels=building_types_selection[,1])
   palette.bt <- colorFactor(rainbow(nrow(building_types)), 
                             levels=building_types[,building_type_id])
-  palette.tod <- colorFactor(rainbow(nrow(tod_data))[c(5,7,3,4,1,6,2)], # re-order colors so that no-tod is blue
-                            levels=tod_data[,tod_id])
-  
+
   # enable/disable color selection depending on clustering
   observeEvent(input$cluster, {
     shinyjs::toggleState("color", input$cluster == FALSE)

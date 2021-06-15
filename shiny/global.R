@@ -46,7 +46,9 @@ building_types_selection <- building_types_selection[ordered_building_type_names
 building_types <- data.table(building_types)
 setkey(building_types, building_type_id)
 
-tod_data <- data.table(tod_id = 0:6, tod_name = c("No TOD", "BRT", "Commuter Rail", NA, "Light Rail", "Ferry", "RGC"))
+tod_data <- data.table(tod_id = 0:6, tod_name = c("No TOD", "BRT", "Commuter Rail", NA, "Light Rail", "Ferry", "RGC"),
+                       #tod_color = c("#0092FF", "#FF00DB", "#49FF00", "#00FF92", "#FF0000", "#4900FF", "#FFDB00")) # from re-arranged rainbow() call (doesn't work for awesomeIcons)
+                       tod_color = c("lightblue", "pink", "lightgreen", "white", "red", "purple", "orange")) # these colors 
 
 color.attributes <- c("bt"="building_type_id", 
                       "sizeres"="residential_units", "sizenonres"="non_residential_sqft", 
