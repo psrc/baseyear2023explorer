@@ -134,7 +134,13 @@ if(process.jobs){
 if(process.capacity){
     cat("\nComputing capacity ...")
     pcl <- readRDS("parcels.rds")
-    constraints <- fread("development_constraints.csv")
+    if(load.from.mysql) {
+        qr <- dbSendQuery(mydb, "select * from development_constraints")
+        constraints <- data.table(fetch(qr, n = -1))
+        dbClearResult(qr)
+    } else {
+        constraints <- fread("development_constraints.csv")
+    }
     pclw <- merge(pcl[, .(parcel_id, plan_type_id, parcel_sqft)], constraints, by = "plan_type_id", 
                   allow.cartesian=TRUE, all = TRUE)
     
