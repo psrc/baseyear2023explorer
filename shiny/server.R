@@ -130,11 +130,13 @@ function(input, output, session) {
       #        area = round(area, 2),
       #        max_dua = round(max_dua, 2),
       #        max_far = round(max_far, 2),
+              DUcap = round(DUcap),
+              SQFTcap = round(SQFTcap),
               lat = round(lat, 4),
               lon = round(lon, 4)
        ) %>%
       select(parcel_id, parcel_fips, cnty, city_id, faz_id, zone_id, tract_id, BG_id, block_id, census_2010_block, TOD, 
-             parcel_sqft, LUtype, use_code, land_value, DU, HH, Pop, nonres_sqft, jobs, Nblds, lat, lon)
+             parcel_sqft, LUtype, use_code, land_value, DU, HH, Pop, nonres_sqft, jobs, DUcap, SQFTcap, Nblds, lat, lon)
   }
 
   # Search by Number -------------------------------------------------------- 
@@ -262,7 +264,9 @@ function(input, output, session) {
                     HH = sum(households, na.rm = TRUE),
                     Pop = sum(population, na.rm = TRUE),
                     non_res_sf = sum(non_residential_sqft, na.rm = TRUE), 
-                    Jobs = sum(jobs, na.rm = TRUE))
+                    Jobs = sum(jobs, na.rm = TRUE),
+                    DUcap = round(sum(DUcap, na.rm = TRUE)),
+                    SQFTcap = round(sum(SQFTcap, na.rm = TRUE)))
                   ]
     setnames(d, "id", isolate(input$s_queryBy))
     datatable(d, caption = "Summary", rownames = FALSE,

@@ -13,13 +13,14 @@ library(rmapshaper)
 library(googleVis)
 
 wrkdir <- '/home/shiny/apps/' # shiny path
-#wrkdir <- '/Users/hana/psrc/R/shinyserver'
+wrkdir <- '/Users/hana/psrc/R/shinyserver'
 
 #data <- 'base_year_2018/data'
 data <- 'baseyear2018explorer/data'
 
 parcel.main <- 'parcels_geo.rds'
 parcel.att <- 'parcels.rds'
+parcel.cap <- 'parcels_capacity.rds'
 blds.file <- 'buildings.rds'
 hhs.file <- 'households.rds'
 jobs.file <- 'jobs.rds'
@@ -29,8 +30,9 @@ persons.file <- 'persons.rds'
 
 parcels <- readRDS(file.path(wrkdir, data, parcel.main))
 attr <- readRDS(file.path(wrkdir, data, parcel.att))
+cap <- readRDS(file.path(wrkdir, data, parcel.cap))
 
-parcels.attr <- parcels %>% left_join(attr, by = "parcel_id")
+parcels.attr <- parcels %>% left_join(attr, by = "parcel_id") %>% left_join(cap, by = "parcel_id")
 
 buildings <- readRDS(file.path(wrkdir, data, blds.file))
 
