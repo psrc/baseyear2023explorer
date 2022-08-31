@@ -138,7 +138,7 @@ function(input, output, session) {
       select(parcel_id, parcel_fips, cnty, city_id, faz_id, zone_id, tract_id, BG_id, block_id, census_2010_block, TOD, 
              parcel_sqft, LUtype, use_code, land_value, DU, HH, Pop, nonres_sqft, jobs, DUcap, SQFTcap, Nblds, lat, lon)
   }
-
+  
   # Search by Number -------------------------------------------------------- 
 
   # place holder for parcel_ids
@@ -265,8 +265,8 @@ function(input, output, session) {
                     Pop = sum(population, na.rm = TRUE),
                     non_res_sf = sum(non_residential_sqft, na.rm = TRUE), 
                     Jobs = sum(jobs, na.rm = TRUE),
-                    DUcap = round(sum(DUcap, na.rm = TRUE)),
-                    SQFTcap = round(sum(SQFTcap, na.rm = TRUE)))
+                    DUcap = round(sum(DUcapxratio, na.rm = TRUE)),
+                    SQFTcap = round(sum(SQFTcapxratio, na.rm = TRUE)))
                   ]
     setnames(d, "id", isolate(input$s_queryBy))
     datatable(d, caption = "Summary", rownames = FALSE,
@@ -618,6 +618,11 @@ function(input, output, session) {
       for(ind in race.indicators)
         if (indname != ind) popup <- paste0(popup, "<br><strong>", ind, ": </strong>", prettyNum(round(shp[[ind]], digits), big.mark = ","))
     }
+    #browser()
+    if(indname %in% capacity.indicators){
+      for(ind in capacity.indicators)
+        if (indname != ind) popup <- paste0(popup, "<br><strong>", ind, ": </strong>", prettyNum(round(shp[[ind]], digits), big.mark = ","))
+    }
     if(indname != "tot_households")
       popup <- paste0(popup,
            "<br><strong>", "total HH",": </strong>", prettyNum(round(shp$tot_households, digits), big.mark = ","))
@@ -632,6 +637,7 @@ function(input, output, session) {
   compute.indicator <- function(indicator, geo.id){
     select.columns <- unique(c("name_id", indicator, "tot_households", "tot_population", "tot_jobs"))
     if(indicator %in% race.indicators) select.columns <- unique(c(select.columns, race.indicators))
+    if(indicator %in% capacity.indicators) select.columns <- unique(c(select.columns, capacity.indicators))
     result <- indicators.dt[[geo.id]][, select.columns, with = FALSE]
     #result <- dt[, .(ind = mean(eval(parse(text=indicator)))), by = list(name_id = eval(parse(text=geo.id)))]
     result

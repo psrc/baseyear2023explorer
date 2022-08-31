@@ -8,9 +8,9 @@ process.parcels <- FALSE
 process.buildings <- FALSE
 process.households <- FALSE
 process.jobs <- FALSE
-process.persons <- TRUE
+process.persons <- FALSE
 process.agents.with.race <- FALSE # not needed anymore
-process.capacity <- FALSE
+process.capacity <- TRUE
 
 
 # used when loading from files (if load.from.mysql is FALSE)
@@ -28,8 +28,8 @@ buildings.tbl.name <- "buildings"
 households.tbl.name <- "households"
 jobs.tbl.name <- "jobs"
 persons.tbl.name <- "persons"
-db.name <- "2018_parcel_baseyear"
-#db.name <- "2018_parcel_baseyear_luv3_working"
+#db.name <- "2018_parcel_baseyear"
+db.name <- "2018_parcel_baseyear_luv3_working"
 
 # Connecting to Mysql
 mysql.connection <- function(dbname) {
@@ -151,10 +151,11 @@ if(process.capacity){
     pclw[constraint_type == "units_per_acre", residential_units := parcel_sqft * maximum / 43560 * coverage]
     
     # select one max for residential and one for non-res type, so that each parcel has 2 records at most
-    pclwu <- pclw[pclw[, .I[which.max(maximum)], by = .(parcel_id, constraint_type)]$V1]
+    pclwu <- pclw[pclw[, .I[which.max(maximum)], by = .(parcel_id, constraint_type)]$V1][!is.na(parcel_id)]
     pclwu[, mixed := .N > 1, by = parcel_id]
     pclwm <- merge(pclwu[constraint_type == "far", .(parcel_id, SQFTcap = building_sqft)],
-                    pclwu[constraint_type == "units_per_acre", .(parcel_id, DUcap = residential_units)], all = TRUE)
+                    pclwu[constraint_type == "units_per_acre", .(parcel_id, DUcap = residential_units)], all = TRUE)[, mixed_cap := 0]
+    pclwm[!is.na(SQFTcap) & !is.na(DUcap) & SQFTcap > 0 & DUcap > 0, mixed_cap := 1]
     pclwm[is.na(SQFTcap), SQFTcap := 0]
     pclwm[is.na(DUcap), DUcap := 0]
     saveRDS(pclwm, "parcels_capacity.rds")

@@ -180,7 +180,9 @@ navbarPage(theme = shinytheme("simplex"),
                                                               "jobs density" = "jobs_per_acre",
                                                               "jobs per capita" = "jobs_per_capita",
                                                               "land value per sf"="land_value_per_sf",
-                                                              "% free res capacity"="free_res_capacity"
+                                                              "total dwelling units"="total_du",
+                                                              "total res capacity"="total_du_capacity",
+                                                              "% free res capacity"="percent_free_du_capacity"
                                                ),
                                                width = '100%'
                                    ),

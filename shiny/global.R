@@ -28,10 +28,15 @@ persons.file <- 'persons.rds'
 #hhs.wrace.file <- 'households_with_race.rds'
 #persons.wrace.file <- 'persons_with_race.rds'
 
-parcels <- readRDS(file.path(wrkdir, data, parcel.main))
-attr <- readRDS(file.path(wrkdir, data, parcel.att))
-cap <- readRDS(file.path(wrkdir, data, parcel.cap))
+# load parcels files
+parcels <- readRDS(file.path(wrkdir, data, parcel.main)) # geo-coordinates
+attr <- readRDS(file.path(wrkdir, data, parcel.att)) # various attributes
+cap <- readRDS(file.path(wrkdir, data, parcel.cap)) # capacity
+ratio <- 50/100
+cap[, DUcapxratio := ifelse(mixed_cap == 1, ratio * DUcap, DUcap)]
+cap[, SQFTcapxratio := ifelse(mixed_cap == 1, ratio * SQFTcap, SQFTcap)]
 
+# join parcel datasets together
 parcels.attr <- parcels %>% left_join(attr, by = "parcel_id") %>% left_join(cap, by = "parcel_id")
 
 buildings <- readRDS(file.path(wrkdir, data, blds.file))
@@ -171,7 +176,9 @@ for(gid in c("zone_id", "faz_id")){
                                   parcels.attr[, sqft_for_land_value := parcel_sqft * (land_value > 0)][, 
                                                 .(acres = sum(parcel_sqft)/43560,
                                                    land_value = sum(land_value/1000),
-                                                   sqft_for_value = sum(sqft_for_land_value/1000)),
+                                                   sqft_for_value = sum(sqft_for_land_value/1000),
+                                                  total_du = sum(residential_units, na.rm = TRUE),
+                                                  total_du_capacity = sum(DUcapxratio)),
                                                by = list(name_id = eval(parse(text=gid)))], 
                                   by = "name_id")
     indicators.dt[[gid]][acres > 0, `:=`(population_per_acre = tot_population/acres,
@@ -180,6 +187,7 @@ for(gid in c("zone_id", "faz_id")){
     indicators.dt[[gid]][, `:=`(percent_low_income = 100*low_income/tot_households, 
                                 percent_high_income = 100*high_income/tot_households,
                                 land_value_per_sf = land_value/sqft_for_value,
+                                percent_free_du_capacity = 100*pmax(0, total_du_capacity - total_du)/total_du_capacity,
                                 #percent_non_white_mixed = 100*(pop_rc_total - pop_rc_white)/pop_rc_total,
                                 #percent_non_white = 100*(pop_rc_alone - pop_rc_white)/pop_rc_alone,
                                 percent_black = 100*pop_rc_black/pop_total,
@@ -210,11 +218,13 @@ polmap.settings <- list(median_income = list(breaks = c(0, 50000, 65000, 80000, 
                         jobs_per_acre = list(breaks = c(0, 0.5, 1, 5, 10, 15), digits = 1),
                         jobs_per_capita = list(breaks = c(0, 0.1, 0.5, 0.8, 1, 2), digits = 1),
                         land_value_per_sf = list(digits = 0),
+                        total_du_capacity = list(digits = 0),
                         average_age = list(breaks = c(0, 25, 35, 45, 55, 65), digits = 1)
                         )
 # percent settings
 race.indicators <- c("percent_black", "percent_asian", "percent_white", "percent_hispanic", "percent_other")
-for(ind in c("percent_low_income", "percent_high_income", race.indicators))
+capacity.indicators <- c("total_du", "total_du_capacity", "percent_free_du_capacity")
+for(ind in c("percent_low_income", "percent_high_income", "percent_free_du_capacity", race.indicators))
     polmap.settings[[ind]] <- list(breaks = c(0, 10, 25, 50, 75, 80, 90, 100), digits = 1)
 
 rm(attr)
