@@ -178,7 +178,8 @@ for(gid in c("zone_id", "faz_id")){
                                                    land_value = sum(land_value/1000),
                                                    sqft_for_value = sum(sqft_for_land_value/1000),
                                                   total_du = sum(residential_units, na.rm = TRUE),
-                                                  total_du_capacity = sum(DUcapxratio)),
+                                                  total_du_capacity = sum(DUcapxratio),
+                                                  free_du_capacity = sum(pmax(0, DUcapxratio - residential_units), na.rm = TRUE)),
                                                by = list(name_id = eval(parse(text=gid)))], 
                                   by = "name_id")
     indicators.dt[[gid]][acres > 0, `:=`(population_per_acre = tot_population/acres,
@@ -187,7 +188,7 @@ for(gid in c("zone_id", "faz_id")){
     indicators.dt[[gid]][, `:=`(percent_low_income = 100*low_income/tot_households, 
                                 percent_high_income = 100*high_income/tot_households,
                                 land_value_per_sf = land_value/sqft_for_value,
-                                percent_free_du_capacity = 100*pmax(0, total_du_capacity - total_du)/total_du_capacity,
+                                percent_free_du_capacity = 100*free_du_capacity/total_du_capacity,
                                 #percent_non_white_mixed = 100*(pop_rc_total - pop_rc_white)/pop_rc_total,
                                 #percent_non_white = 100*(pop_rc_alone - pop_rc_white)/pop_rc_alone,
                                 percent_black = 100*pop_rc_black/pop_total,
@@ -219,11 +220,12 @@ polmap.settings <- list(median_income = list(breaks = c(0, 50000, 65000, 80000, 
                         jobs_per_capita = list(breaks = c(0, 0.1, 0.5, 0.8, 1, 2), digits = 1),
                         land_value_per_sf = list(digits = 0),
                         total_du_capacity = list(digits = 0),
+                        free_du_capacity = list(digits = 0),
                         average_age = list(breaks = c(0, 25, 35, 45, 55, 65), digits = 1)
                         )
 # percent settings
 race.indicators <- c("percent_black", "percent_asian", "percent_white", "percent_hispanic", "percent_other")
-capacity.indicators <- c("total_du", "total_du_capacity", "percent_free_du_capacity")
+capacity.indicators <- c("total_du", "total_du_capacity", "free_du_capacity", "percent_free_du_capacity")
 for(ind in c("percent_low_income", "percent_high_income", "percent_free_du_capacity", race.indicators))
     polmap.settings[[ind]] <- list(breaks = c(0, 10, 25, 50, 75, 80, 90, 100), digits = 1)
 

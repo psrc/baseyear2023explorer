@@ -181,8 +181,9 @@ navbarPage(theme = shinytheme("simplex"),
                                                               "jobs per capita" = "jobs_per_capita",
                                                               "land value per sf"="land_value_per_sf",
                                                               "total dwelling units"="total_du",
-                                                              "total res capacity"="total_du_capacity",
-                                                              "% free res capacity"="percent_free_du_capacity"
+                                                              "total DU capacity"="total_du_capacity",
+                                                              "free DU capacity"="free_du_capacity",
+                                                              "% free DU capacity"="percent_free_du_capacity"
                                                ),
                                                width = '100%'
                                    ),
