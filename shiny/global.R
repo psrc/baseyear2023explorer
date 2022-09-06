@@ -25,6 +25,7 @@ blds.file <- 'buildings.rds'
 hhs.file <- 'households.rds'
 jobs.file <- 'jobs.rds'
 persons.file <- 'persons.rds'
+schools.file <- 'schools.rds'
 #hhs.wrace.file <- 'households_with_race.rds'
 #persons.wrace.file <- 'persons_with_race.rds'
 
@@ -69,6 +70,8 @@ buildings[hhs[, .(.N, population=sum(persons)), by = "building_id"],
 jobs <- readRDS(file.path(wrkdir, data, jobs.file))
 buildings[jobs[, .N, by = "building_id"], jobs := i.N, on = "building_id"][is.na(jobs), jobs := 0]
 
+schools <- readRDS(file.path(wrkdir, data, schools.file))
+
 # add attributes to parcels
 parcels.attr <- data.table(parcels.attr)
 parcels.attr[buildings[, .(households = sum(households), jobs = sum(jobs), 
@@ -81,6 +84,7 @@ parcels.attr[buildings[, .(households = sum(households), jobs = sum(jobs),
 parcels.attr[, region_id := 1]
 parcels.attr[, census_2010_block_group_id := substr(census_2010_block_id, 1, 12)]
 parcels.attr <- merge(parcels.attr, tod_data, by = "tod_id")
+parcels.attr[schools, school_id := i.school_id, on = "parcel_id"]
 
 buildings <- merge(buildings, building_types, by = "building_type_id")
 buildings <- merge(buildings, parcels.attr[, c("parcel_id", setdiff(colnames(parcels.attr), colnames(buildings))), with = FALSE], by = "parcel_id")

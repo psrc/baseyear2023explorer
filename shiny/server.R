@@ -182,7 +182,7 @@ function(input, output, session) {
       numItems <- scan(text = values$ids, sep = ",", quiet = TRUE)
     }
     attrs <- sQueryBy()
-    if(attrs == "school_id") 
+    if(attrs == "school_catchment_id") 
       parcels.filter <- parcels.attr %>% filter(elem_id %in% numItems | hschool_id %in% numItems | mschool_id %in% numItems)
     else {
       expr <- lazyeval::interp(~col %in% numItems, col = as.name(attrs))

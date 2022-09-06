@@ -10,7 +10,8 @@ process.households <- FALSE
 process.jobs <- FALSE
 process.persons <- FALSE
 process.agents.with.race <- FALSE # not needed anymore
-process.capacity <- TRUE
+process.capacity <- FALSE
+process.schools <- TRUE
 
 
 # used when loading from files (if load.from.mysql is FALSE)
@@ -19,6 +20,7 @@ buildings.file.name <- "imputed_buildings_lodes_match_20210302.csv"
 households.file.name <- "households.csv"
 jobs.file.name <- "jobs.csv"
 persons.file.name <- "persons.csv"
+schools.file.name <- "schools.csv"
 #households.with.race.file.name <- "householdsWR.csv"
 #persons.with.race.file.name <- "personsWR.csv"
 
@@ -28,8 +30,9 @@ buildings.tbl.name <- "buildings"
 households.tbl.name <- "households"
 jobs.tbl.name <- "jobs"
 persons.tbl.name <- "persons"
-#db.name <- "2018_parcel_baseyear"
-db.name <- "2018_parcel_baseyear_luv3_working"
+schools.tbl.name <- "schools"
+db.name <- "2018_parcel_baseyear"
+#db.name <- "2018_parcel_baseyear_luv3_working"
 
 # Connecting to Mysql
 mysql.connection <- function(dbname) {
@@ -129,6 +132,18 @@ if(process.jobs){
         jobs <- fread(jobs.file.name)
     }
     saveRDS(jobs, "jobs.rds")
+}
+
+if(process.schools){
+    cat("\nProcessing schools ...")
+    if(load.from.mysql) {
+        qr <- dbSendQuery(mydb, paste0("select * from ", schools.tbl.name))
+        jobs <- data.table(fetch(qr, n = -1))
+        dbClearResult(qr)
+    } else {
+        schools <- fread(schools.file.name)
+    }
+    saveRDS(jobs, "schools.rds")
 }
 
 if(process.capacity){
