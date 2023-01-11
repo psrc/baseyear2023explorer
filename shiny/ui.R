@@ -38,6 +38,8 @@ navbarPage(theme = shinytheme("simplex"),
                                helpText("Geographic areas containing many parcels will be sampled to 5,000 parcels"),
                                br(),
                                checkboxInput("color_pcl_by_tod", "Color by TOD", FALSE),
+                               br(),
+                               helpText("Last data update: 2023-01-11")
                                ), # end column
                         column(width = 10,
                                leafletOutput("map", height = "725px")
