@@ -1,4 +1,5 @@
 ## Convert datasets into rds format
+## Note: When data are updated, change the "last data update" in ui.R
 
 library(data.table)
 
