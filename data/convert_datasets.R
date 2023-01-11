@@ -5,13 +5,13 @@ library(data.table)
 load.from.mysql <- TRUE
 
 process.parcels <- FALSE
-process.buildings <- FALSE
-process.households <- FALSE
-process.jobs <- FALSE
+process.buildings <- TRUE
+process.households <- TRUE
+process.jobs <- TRUE
 process.persons <- FALSE
 process.agents.with.race <- FALSE # not needed anymore
 process.capacity <- FALSE
-process.schools <- TRUE
+process.schools <- FALSE
 
 
 # used when loading from files (if load.from.mysql is FALSE)
@@ -33,6 +33,7 @@ persons.tbl.name <- "persons"
 schools.tbl.name <- "schools"
 db.name <- "2018_parcel_baseyear"
 #db.name <- "2018_parcel_baseyear_luv3_working"
+#db.name <- "2018_parcel_baseyear_luv3_scenarios"
 
 # Connecting to Mysql
 mysql.connection <- function(dbname) {

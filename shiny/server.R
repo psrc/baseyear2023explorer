@@ -115,6 +115,7 @@ function(input, output, session) {
               block_id = census_block_id,
              census_2010_block = census_2010_block_id,
               LUtype = land_use_type_id,
+             plan_type = plan_type_id,
       #        bldg_sqft = building_sqft, 
                nonres_sqft = non_residential_sqft,
                HH = households,
@@ -136,7 +137,7 @@ function(input, output, session) {
               lon = round(lon, 4)
        ) %>%
       select(parcel_id, parcel_fips, cnty, city_id, faz_id, zone_id, tract_id, BG_id, block_id, census_2010_block, TOD, 
-             parcel_sqft, LUtype, use_code, land_value, DU, HH, Pop, nonres_sqft, jobs, DUcap, SQFTcap, Nblds, lat, lon)
+             parcel_sqft, LUtype, use_code, plan_type, land_value, DU, HH, Pop, nonres_sqft, jobs, DUcap, SQFTcap, Nblds, lat, lon)
   }
   
   # Search by Number -------------------------------------------------------- 
