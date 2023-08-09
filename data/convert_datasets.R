@@ -5,15 +5,14 @@ library(data.table)
 
 load.from.mysql <- TRUE
 
-process.parcels <- FALSE
-process.buildings <- TRUE
-process.households <- TRUE
-process.jobs <- TRUE
+process.parcels <- TRUE
+process.buildings <- FALSE
+process.households <- FALSE
+process.jobs <- FALSE
 process.persons <- FALSE
 process.agents.with.race <- FALSE # not needed anymore
-process.capacity <- FALSE
+process.capacity <- TRUE
 process.schools <- FALSE
-
 
 # used when loading from files (if load.from.mysql is FALSE)
 parcels.file.name <- "parcels.csv"
@@ -69,8 +68,10 @@ if(process.parcels){
     } else {
         pclattr <- fread(parcels.file.name)
     }
-    pclattr[, census_2010_block_id := as.character(census_2010_block_id)]
-    saveRDS(pclattr, "parcels.rds")
+    if(process.parcels){
+        pclattr[, census_2010_block_id := as.character(census_2010_block_id)]
+        saveRDS(pclattr, "parcels.rds")
+    }
 }
 
 if(process.buildings){

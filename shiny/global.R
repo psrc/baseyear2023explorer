@@ -232,7 +232,7 @@ race.indicators <- c("percent_black", "percent_asian", "percent_white", "percent
 capacity.indicators <- c("total_du", "total_du_capacity", "free_du_capacity", "percent_free_du_capacity")
 for(ind in c("percent_low_income", "percent_high_income", "percent_free_du_capacity", race.indicators))
     polmap.settings[[ind]] <- list(breaks = c(0, 10, 25, 50, 75, 80, 90, 100), digits = 1)
-
+#browser()
 rm(attr)
 rm(parcels)
 rm(jobs)

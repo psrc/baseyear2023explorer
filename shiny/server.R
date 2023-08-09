@@ -110,6 +110,7 @@ function(input, output, session) {
     sSelected %>%
       rename(parcel_fips = parcel_id_fips,
               cnty = county_id,
+              control_hct = control_hct_id,
               tract_id = census_tract_id,
               BG_id = census_block_group_id,
               block_id = census_block_id,
@@ -136,7 +137,7 @@ function(input, output, session) {
               lat = round(lat, 4),
               lon = round(lon, 4)
        ) %>%
-      select(parcel_id, parcel_fips, cnty, city_id, faz_id, zone_id, tract_id, BG_id, block_id, census_2010_block, TOD, 
+      select(parcel_id, parcel_fips, cnty, city_id, control_hct, faz_id, zone_id, tract_id, BG_id, block_id, census_2010_block, TOD, 
              parcel_sqft, LUtype, use_code, plan_type, land_value, DU, HH, Pop, nonres_sqft, jobs, DUcap, SQFTcap, Nblds, lat, lon)
   }
   
