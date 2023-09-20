@@ -37,6 +37,11 @@ ratio <- 50/100
 cap[, DUcapxratio := ifelse(mixed_cap == 1, ratio * DUcap, DUcap)]
 cap[, SQFTcapxratio := ifelse(mixed_cap == 1, ratio * SQFTcap, SQFTcap)]
 
+# jitter parcels that have the same coordinates (stacked parcels)
+dupl.pcl <- unique(pcl[duplicated(pcl[, .(lat, lon)]), parcel_id])
+parcels[parcel_id %in% dupl.pcl, `:=`(lat = jitter(lat, factor = 0.2), 
+                                      lon = jitter(lon, factor = 0.2))]
+
 # join parcel datasets together
 parcels.attr <- parcels %>% left_join(attr, by = "parcel_id") %>% left_join(cap, by = "parcel_id")
 
