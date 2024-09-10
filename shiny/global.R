@@ -2,29 +2,33 @@ library(shiny)
 library(shinythemes)
 library(leaflet)
 library(leaflet.extras)
-library(dplyr)
-library(tidyverse)
+#library(dplyr)
+#library(tidyverse)
 library(DT)
 library(geoshaper)
 library(sp)
 library(data.table)
 library(sf)
 library(rmapshaper)
-library(googleVis)
+#library(googleVis)
 
 #wrkdir <- '/home/shiny/apps/' # shiny path
 wrkdir <- '/Users/hana/psrc/R/shinyserver'
 
 data <- 'baseyear2023explorer/data'
 
+# mandatory files
 parcel.main <- 'parcels_geo.rds'
 parcel.att <- 'parcels.rds'
-parcel.cap <- 'parcels_capacity.rds'
 blds.file <- 'buildings.rds'
+
+# optional files
+parcel.cap <- 'parcels_capacity.rds'
 hhs.file <- 'households.rds'
 jobs.file <- 'jobs.rds'
 persons.file <- 'persons.rds'
 schools.file <- 'schools.rds'
+census.blocks.file <- 'census_blocks.rds'
 
 # load parcels files
 parcels <- readRDS(file.path(wrkdir, data, parcel.main)) # geo-coordinates
@@ -36,7 +40,7 @@ parcels[parcel_id %in% dupl.pcl, `:=`(lat = jitter(lat, factor = 0.2),
                                       lon = jitter(lon, factor = 0.2))]
 
 # join parcel datasets together
-parcels.attr <- parcels %>% left_join(attr, by = "parcel_id") 
+parcels.attr <- merge(parcels, attr, by = "parcel_id", all.x = TRUE)
 
 # capacity
 if(file.exists((f <- file.path(wrkdir, data, parcel.cap)))){
@@ -99,8 +103,13 @@ parcels.attr[buildings[, .(households = sum(households), jobs = sum(jobs),
              on = "parcel_id"]
 parcels.attr[, region_id := 1]
 
-if("census_2020_block_group_id" %in% colnames(parcels.attr)){
-    parcels.attr[, census_2020_block_group_id := substr(census_2020_block_id, 1, 12)]
+if("census_block_id" %in% colnames(parcels.attr) && file.exists((f <- file.path(wrkdir, data, census.blocks.file)))){
+    cb <- readRDS(f)
+    parcels.attr[cb,  `:=`(census_2020_block_id = i.census_2020_block_id, 
+                           census_block_group_id = i.census_block_group_id,
+                           census_2020_block_group_id = i.census_2020_block_group_id, 
+                           census_tract_id = i.census_tract_id),
+                 on = .(census_block_id)]
 } else parcels.attr[, census_2020_block_group_id := 0]
 
 if("tod_id" %in% colnames(parcels.attr)){
@@ -209,6 +218,12 @@ for(gid in c("zone_id", "faz_id")){
                                   by = "name_id", all = TRUE)
         }
     }
+    missing.attr <- setdiff(c("median_income", "average_hh_size", "tot_households", "tot_population",
+                              "low_income", "high_income", "tot_jobs", "nonHB_jobs", "home_based_jobs",
+                              "average_age", "pop_rc_white", "pop_rc_black", "pop_rc_asian", "pop_rc_other",
+                              "pop_rc_more_nhsp", "pop_rc_hsp", "pop_total"), colnames(indicators.dt[[gid]]))
+    for(attr in missing.attr)
+        indicators.dt[[gid]][[attr]] <- 0
     if(gid %in% colnames(parcels.attr)){
         indicators.dt[[gid]] <- merge(indicators.dt[[gid]], 
                                   parcels.attr[, sqft_for_land_value := parcel_sqft * (land_value > 0)][, 

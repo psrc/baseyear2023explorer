@@ -3,11 +3,6 @@ library(sf)
 
 setwd("~/psrc/R/shinyserver/baseyear2023explorer/data")
 
-#pcl <- fread("prclxy.csv")
-#setnames(pcl, "PIN", "parcel_id")
-#setnames(pcl, "LATITUDE", "lat")
-#setnames(pcl, "LONGITUDE", "lon")
-
 pcl <- readRDS("parcels.rds")
 
 points <- pcl[, .(parcel_id, x_coord_sp, y_coord_sp)]

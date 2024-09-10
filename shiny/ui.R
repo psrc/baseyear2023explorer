@@ -12,8 +12,8 @@ navbarPage(theme = shinytheme("simplex"),
                                                           "FAZ" = "faz_id",
                                                           "City ID" = "city_id",
                                                           "Control HCT" = "control_hct_id",
-                                                          "2010 census block" = "census_2010_block_id",
-                                                          "2010 census block group" = "census_2010_block_group_id",
+                                                          "2020 census block" = "census_2020_block_id",
+                                                          "2020 census block group" = "census_2020_block_group_id",
                                                           "Census block (int)"= "census_block_id",
                                                           "Census block group (int)" = "census_block_group_id",
                                                           "Census tract (int)" = "census_tract_id",
@@ -40,7 +40,7 @@ navbarPage(theme = shinytheme("simplex"),
                                br(),
                                checkboxInput("color_pcl_by_tod", "Color by TOD", FALSE),
                                br(),
-                               helpText("Last data update: 2023-08-09")
+                               helpText("Last data update: 2024-09-10")
                                ), # end column
                         column(width = 10,
                                leafletOutput("map", height = "725px")
@@ -88,8 +88,8 @@ navbarPage(theme = shinytheme("simplex"),
                                                               "FAZ" = "faz_id",
                                                               "City ID" = "city_id",
                                                               "Control HCT" = "control_hct_id",
-                                                              "2010 census block" = "census_2010_block_id",
-                                                              "2010 census block group" = "census_2010_block_group_id",
+                                                              "2020 census block" = "census_2020_block_id",
+                                                              "2020 census block group" = "census_2020_block_group_id",
                                                               "Census block (int)"= "census_block_id",
                                                               "Census block group (int)" = "census_block_group_id",
                                                               "Census_tract (int)" = "census_tract_id",
@@ -140,8 +140,8 @@ navbarPage(theme = shinytheme("simplex"),
                                                        "control HCT" = "control_hct_id",
                                                        "FAZ" = "faz_id",
                                                        "TAZ" = "zone_id",
-                                                       "2010 census block" = "census_2010_block_id",
-                                                       "2010 census block group" = "census_2010_block_group_id",
+                                                       "2020 census block" = "census_2020_block_id",
+                                                       "2020 census block group" = "census_2020_block_group_id",
                                                        "census block (int)"= "census_block_id",
                                                        "census block group (int)" = "census_block_group_id",
                                                        "census_tract (int)" = "census_tract_id"
@@ -208,9 +208,9 @@ navbarPage(theme = shinytheme("simplex"),
                             ) # end column
                         ), # end fluidRow
                     ) # end fluidPage
-            ), # end tabPanel
-            tabPanel("Graphs",
-                     htmlOutput('graphgvis'),
-                     HTML("<br/><i><small>*If you don't see a graph above, make sure Adobe Flash Player is installed and enabled in your browser.</small></i>")
-            )
+            )#, # end tabPanel
+            #tabPanel("Graphs",
+            #         htmlOutput('graphgvis'),
+            #         HTML("<br/><i><small>*If you don't see a graph above, make sure Adobe Flash Player is installed and enabled in your browser.</small></i>")
+            #)
 ) # end navbarPage

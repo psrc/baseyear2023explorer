@@ -107,38 +107,25 @@ function(input, output, session) {
   
   # format table
   format.table <- function(sSelected) {
-    sSelected %>%
-      rename(parcel_fips = parcel_id_fips,
-              cnty = county_id,
-              control_hct = control_hct_id,
-              tract_id = census_tract_id,
-              BG_id = census_block_group_id,
-              block_id = census_block_id,
-             census_2020_block = census_2020_block_id,
-              LUtype = land_use_type_id,
-             plan_type = plan_type_id,
-      #        bldg_sqft = building_sqft, 
-               nonres_sqft = non_residential_sqft,
-               HH = households,
-               Pop = population,
-      #         Jobs = jobs,
-               DU = residential_units,
-                TOD = tod_name
-      #        gwthctr_id = growth_center_id,
-      #        area = AREA,
-      #        shape_area = Shape_Area
-       ) %>%
-      mutate( #shape_area = round(shape_area, 10),
-      #        area = round(area, 2),
-      #        max_dua = round(max_dua, 2),
-      #        max_far = round(max_far, 2),
-              DUcap = round(DUcap),
-              SQFTcap = round(SQFTcap),
-              lat = round(lat, 4),
-              lon = round(lon, 4)
-       ) %>%
-      select(parcel_id, parcel_fips, cnty, city_id, control_hct, faz_id, zone_id, tract_id, BG_id, block_id, census_2020_block, TOD, 
-             parcel_sqft, LUtype, use_code, plan_type, land_value, DU, HH, Pop, nonres_sqft, jobs, DUcap, SQFTcap, Nblds, lat, lon)
+    sSelected[, `:=`(DUcap = round(DUcap),
+                    SQFTcap = round(SQFTcap),
+                    lat = round(lat, 4),
+                    lon = round(lon, 4))][, 
+              .(parcel_id, parcel_fips = parcel_id_fips,
+                cnty = county_id, city_id, 
+                control_hct = control_hct_id,
+                faz_id, zone_id, 
+                tract_id = census_tract_id,
+                BG_id = census_block_group_id,
+                block_id = census_block_id,
+                census_2020_block = census_2020_block_id,
+                TOD = tod_name, parcel_sqft, 
+                LUtype = land_use_type_id,
+                use_code, plan_type = plan_type_id,
+                land_value, DU = residential_units,
+                HH = households, Pop = population,
+                nonres_sqft = non_residential_sqft,
+                jobs, DUcap, SQFTcap, Nblds, lat, lon)]
   }
   
   # Search by Number -------------------------------------------------------- 
@@ -185,14 +172,13 @@ function(input, output, session) {
     }
     attrs <- sQueryBy()
     if(attrs == "school_catchment_id") 
-      parcels.filter <- parcels.attr %>% filter(elem_id %in% numItems | hschool_id %in% numItems | mschool_id %in% numItems)
+      parcels.filter <- parcels.attr[elem_id %in% numItems | hschool_id %in% numItems | mschool_id %in% numItems]
     else {
-      expr <- lazyeval::interp(~col %in% numItems, col = as.name(attrs))
-      parcels.filter <- parcels.attr %>% filter_(expr)
+      parcels.filter <- parcels.attr[get(attrs) %in% numItems]
     }
     
     if (nrow(parcels.filter) > 5000){
-      parcels.filter %>% sample_n(5000)
+      parcels.filter <- parcels.filter[sample.int(nrow(parcels.filter), 5000)]
     } else {
       parcels.filter
     }
@@ -203,9 +189,8 @@ function(input, output, session) {
     if (is.null(sSelected())) return(NULL)
     
     sSelected <- sSelected()
-    format.table(sSelected) %>%
-      mutate(loc = paste('<a class="go-map" href="" data-lat="', lat, '" data-long="', lon, '"><i class="fa fa-crosshairs"></i></a>', sep="")) %>%
-      select(loc, everything())
+    format.table(sSelected)[, loc := paste0('<a class="go-map" href="" data-lat="', lat, 
+                                            '" data-long="', lon, '"><i class="fa fa-crosshairs"></i></a>')][]
   })
   
   observe({
@@ -258,7 +243,7 @@ function(input, output, session) {
   output$sum_dt <- DT::renderDataTable({
     dat <- sSelected()
     if (is.null(dat) || nrow(dat) < 2) return(NULL) # don't show summary table if only one record was selected
-    d <- data.table(dat)[, .(
+    d <- dat[, .(
                     id = isolate(input$s_id),
                     parcels = .N,
                     buildings = sum(Nblds, na.rm = TRUE),
@@ -293,7 +278,7 @@ function(input, output, session) {
   
   sSelectedcl <- reactive({
     if (is.null(values.cl$ids)) return(NULL)
-    parcels.attr %>% filter(parcel_id %in% values.cl$ids)
+    parcels.attr[parcel_id %in% values.cl$ids]
   })
   
   observe({
@@ -350,11 +335,9 @@ function(input, output, session) {
     } else {
       numItems <- scan(text = values$ids_bld, sep = ",", quiet = TRUE)
     }
-    expr <- lazyeval::interp(~col %in% numItems, col = as.name(bQueryBy()))
-    subdata <- buildings %>% filter_(expr) 
+    subdata <- buildings[bQueryBy() %in% numItems]
     if (nrow(subdata)==0) return()
-    #browser()
-    subdata <- data.table(subdata)[generic_building_type_id %in% as.integer(input$BTfilter)]
+    subdata <- subdata[generic_building_type_id %in% as.integer(input$BTfilter)]
     if (nrow(subdata)==0) return()
     subdata[, color := NA]
     if(input$color == "tod"){
@@ -380,7 +363,7 @@ function(input, output, session) {
     subdata <- buildings
     if (nrow(subdata)==0) return()
     #browser()
-    subdata <- data.table(subdata)[generic_building_type_id %in% as.integer(input$BTfilter)]
+    subdata <- subdata[generic_building_type_id %in% as.integer(input$BTfilter)]
     if (nrow(subdata)==0) return()
     subdata[, color := NA]
     if(input$color == "tod"){
@@ -550,7 +533,7 @@ function(input, output, session) {
     dat <- parcels.attr
     if (is.null(dat)|| nrow(dat) < 1) return(NULL)
 
-    d <- data.table(dat)[, .(
+    d <- dat[, .(
         DU = sum(residential_units, na.rm = TRUE), 
         HH = sum(households, na.rm = TRUE),
         Pop = sum(population, na.rm = TRUE),

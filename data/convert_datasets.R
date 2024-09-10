@@ -3,15 +3,16 @@
 
 library(data.table)
 
-load.from.mysql <- FALSE
+load.from.mysql <- TRUE
 
-process.parcels <- TRUE
-process.buildings <- TRUE
+process.parcels <- FALSE
+process.buildings <- FALSE
 process.households <- FALSE
 process.jobs <- FALSE
 process.persons <- FALSE
 process.capacity <- FALSE
 process.schools <- FALSE
+process.census.blocks <- TRUE
 
 # used when loading from files (if load.from.mysql is FALSE)
 parcels.file.name <- "urbansim_parcels_kitsap.csv"
@@ -20,6 +21,8 @@ households.file.name <- "households.csv"
 jobs.file.name <- "jobs.csv"
 persons.file.name <- "persons.csv"
 schools.file.name <- "schools.csv"
+census.blocks.file.name <- "census_blocks.csv"
+census.bg.file.name <- "census_block_groups.csv"
 
 # used when loading from MySQL DB (if load.from.mysql is TRUE)
 parcels.tbl.name <- "parcels"
@@ -28,6 +31,9 @@ households.tbl.name <- "households"
 jobs.tbl.name <- "jobs"
 persons.tbl.name <- "persons"
 schools.tbl.name <- "schools"
+census.blocks.tbl.name <- "census_blocks"
+census.bg.tbl.name <- "census_block_groups"
+
 db.name <- "psrc_2023_parcel_baseyear"
 
 # Connecting to Mysql
@@ -64,7 +70,6 @@ if(process.parcels){
         pclattr <- fread(parcels.file.name)
     }
     if(process.parcels){
-        #pclattr[, census_2020_block_id := as.character(census_2020_block_id)]
         saveRDS(pclattr, "parcels.rds")
     }
 }
@@ -125,12 +130,29 @@ if(process.schools){
     cat("\nProcessing schools ...")
     if(load.from.mysql) {
         qr <- dbSendQuery(mydb, paste0("select * from ", schools.tbl.name))
-        jobs <- data.table(fetch(qr, n = -1))
+        tbl <- data.table(fetch(qr, n = -1))
         dbClearResult(qr)
     } else {
-        schools <- fread(schools.file.name)
+        tbl <- fread(schools.file.name)
     }
-    saveRDS(jobs, "schools.rds")
+    saveRDS(tbl, "schools.rds")
+}
+
+if(process.census.blocks){
+    cat("\nProcessing census blocks ...")
+    if(load.from.mysql) {
+        qr <- dbSendQuery(mydb, paste0("select * from ", census.blocks.tbl.name))
+        tblb <- data.table(fetch(qr, n = -1))
+        dbClearResult(qr)
+        qr <- dbSendQuery(mydb, paste0("select * from ", census.bg.tbl.name))
+        tblbg <- data.table(fetch(qr, n = -1))
+        dbClearResult(qr)
+    } else {
+        tblb <- fread(census.blocks.file.name)
+        tblbg <- fread(census.bg.file.name)
+    }
+    tbl <- merge(tblb, tblbg, by = c("census_block_group_id", "county_id"))
+    saveRDS(tbl, "census_blocks.rds")
 }
 
 if(process.capacity){
