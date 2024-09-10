@@ -3,26 +3,23 @@
 
 library(data.table)
 
-load.from.mysql <- TRUE
+load.from.mysql <- FALSE
 
 process.parcels <- TRUE
-process.buildings <- FALSE
+process.buildings <- TRUE
 process.households <- FALSE
 process.jobs <- FALSE
 process.persons <- FALSE
-process.agents.with.race <- FALSE # not needed anymore
-process.capacity <- TRUE
+process.capacity <- FALSE
 process.schools <- FALSE
 
 # used when loading from files (if load.from.mysql is FALSE)
-parcels.file.name <- "parcels.csv"
-buildings.file.name <- "imputed_buildings_lodes_match_20210302.csv"
+parcels.file.name <- "urbansim_parcels_kitsap.csv"
+buildings.file.name <- "urbansim_buildings_kitsap.csv"
 households.file.name <- "households.csv"
 jobs.file.name <- "jobs.csv"
 persons.file.name <- "persons.csv"
 schools.file.name <- "schools.csv"
-#households.with.race.file.name <- "householdsWR.csv"
-#persons.with.race.file.name <- "personsWR.csv"
 
 # used when loading from MySQL DB (if load.from.mysql is TRUE)
 parcels.tbl.name <- "parcels"
@@ -31,9 +28,7 @@ households.tbl.name <- "households"
 jobs.tbl.name <- "jobs"
 persons.tbl.name <- "persons"
 schools.tbl.name <- "schools"
-db.name <- "2018_parcel_baseyear"
-#db.name <- "2018_parcel_baseyear_luv3_working"
-#db.name <- "2018_parcel_baseyear_luv3_scenarios"
+db.name <- "psrc_2023_parcel_baseyear"
 
 # Connecting to Mysql
 mysql.connection <- function(dbname) {
@@ -69,7 +64,7 @@ if(process.parcels){
         pclattr <- fread(parcels.file.name)
     }
     if(process.parcels){
-        pclattr[, census_2010_block_id := as.character(census_2010_block_id)]
+        #pclattr[, census_2020_block_id := as.character(census_2020_block_id)]
         saveRDS(pclattr, "parcels.rds")
     }
 }
@@ -84,7 +79,8 @@ if(process.buildings){
     } else {
         bld <- fread(buildings.file.name)
         bldc <- bld[, .(parcel_id, building_id, gross_sqft, non_residential_sqft, residential_units, year_built, 
-                    land_area, improvement_value, stories, building_type_id, use_code, sqft_per_unit)]
+                    land_area, improvement_value, stories, building_type_id, use_code#, sqft_per_unit
+                    )]
     }
     saveRDS(bldc, "buildings.rds")
 }
@@ -112,18 +108,6 @@ if(process.persons){
     }
     saveRDS(pers, "persons.rds")
 }
-
-if(process.agents.with.race) {
-    hhs <- fread(households.with.race.file.name)
-    saveRDS(hhs, "households_with_race.rds")
-    pers <- fread(persons.with.race.file.name)
-    if(length(grep(":i4", colnames(pers))) > 0) { # remove ":*" from colnames
-        spl <- strsplit(colnames(pers), ":")
-        colnames(pers) <- sapply(spl, function(x) x[1])
-    }
-    saveRDS(pers, "persons_with_race.rds")
-}
-
 
 if(process.jobs){
     cat("\nProcessing jobs ...")

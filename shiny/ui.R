@@ -1,5 +1,5 @@
 navbarPage(theme = shinytheme("simplex"),
-           "Base Year 2018 Explorer",
+           "Base Year 2023 Explorer",
            tabPanel("Parcels by Number",
                     tags$head(tags$script(src="gomap.js")),
                     fluidPage(
