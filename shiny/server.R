@@ -644,16 +644,16 @@ function(input, output, session) {
     leafletProxy("pol_map") %>% clearShapes() %>% clearControls()
   })
   
-  output$graphgvis <- renderGvis({
-    #browser()
-    gvisMotionChart(indicators.chart,
-                    idvar="faz_id", 
-                    timevar="Year",
-                    xvar="tot_households", yvar="tot_jobs",
-                    colorvar="county", 
-                    sizevar="acres",
-                    options=list(width=700, height=600))
-  })
+  # output$graphgvis <- renderGvis({
+  #   #browser()
+  #   gvisMotionChart(indicators.chart,
+  #                   idvar="faz_id", 
+  #                   timevar="Year",
+  #                   xvar="tot_households", yvar="tot_jobs",
+  #                   colorvar="county", 
+  #                   sizevar="acres",
+  #                   options=list(width=700, height=600))
+  # })
 }# end server function
 
 
