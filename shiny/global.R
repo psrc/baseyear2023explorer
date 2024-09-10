@@ -12,8 +12,8 @@ library(sf)
 library(rmapshaper)
 #library(googleVis)
 
-#wrkdir <- '/home/shiny/apps/' # shiny path
-wrkdir <- '/Users/hana/psrc/R/shinyserver'
+wrkdir <- '/home/shiny/apps/' # shiny path
+#wrkdir <- '/Users/hana/psrc/R/shinyserver'
 
 data <- 'baseyear2023explorer/data'
 
