@@ -335,7 +335,7 @@ function(input, output, session) {
     } else {
       numItems <- scan(text = values$ids_bld, sep = ",", quiet = TRUE)
     }
-    subdata <- buildings[bQueryBy() %in% numItems]
+    subdata <- buildings[get(bQueryBy()) %in% numItems]
     if (nrow(subdata)==0) return()
     subdata <- subdata[generic_building_type_id %in% as.integer(input$BTfilter)]
     if (nrow(subdata)==0) return()
@@ -362,7 +362,6 @@ function(input, output, session) {
   subset.data.no.id <- reactive({
     subdata <- buildings
     if (nrow(subdata)==0) return()
-    #browser()
     subdata <- subdata[generic_building_type_id %in% as.integer(input$BTfilter)]
     if (nrow(subdata)==0) return()
     subdata[, color := NA]
@@ -385,7 +384,18 @@ function(input, output, session) {
   
   subset.data.no.id.deb <- subset.data.no.id %>% debounce(1000) # causes some delay for collecting inputs
   
-  marker.popup <- function() ~paste0("Parcel ID:  ", parcel_id, 
+  construct.assessor.link <- function(parcel_id, parcel_id_fips, county_id)
+    ifelse(county_id == 33, paste0("<a href = 'https://blue.kingcounty.com/Assessor/eRealProperty/Dashboard.aspx?ParcelNbr=", 
+                              parcel_id_fips, "' target = '_blank'>", parcel_id, "</a>"), # King county
+      ifelse(county_id == 53, paste0("<a href = 'https://atip.piercecountywa.gov/app/v2/propertyDetail/", 
+                              parcel_id_fips, "/summary' target = '_blank'>", parcel_id, "</a>"), # Pierce
+             ifelse(county_id == 35, paste0("<a href = 'https://psearch.kitsap.gov/pdetails/Details?page=general&parcel=",
+                              parcel_id_fips, "' target = '_blank'>", parcel_id, "</a>"),
+           parcel_id)
+      )
+    )
+  
+  marker.popup <- function() ~paste0("Parcel ID:  ", construct.assessor.link(parcel_id, parcel_id_fips, county_id), 
                                      "<br>Bld ID:     ", as.integer(building_id), 
                                      "<br>Year built: ", as.integer(year_built),
                                      "<br>Bld type:   ", building_type_name,
@@ -395,10 +405,12 @@ function(input, output, session) {
                                      "<br>Jobs: ", as.integer(jobs),
                                      "<br>TOD: ", tod_name
                             )
+  
   # display markers
   observe({
     dat <- subset.data.deb()
     if(!is.null(dat) && values$ids_bld != " ") {
+      #browser()
       leaflet.results.blds(leafletProxy("mapb"), dat, marker.popup(), 
                     cluster = input$cluster)
       data.of.click$selected.by.id <- dat
