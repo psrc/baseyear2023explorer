@@ -352,6 +352,7 @@ function(input, output, session) {
         values <- subdata[[color.attributes[input$color]]]
       }
       col <- do.call(palette.name, list(values))
+      #if(input$color == "yearbuilt") browser()
     }
     if(nrow(subdata) > 0) subdata[, color:= col]
     subdata
@@ -457,6 +458,9 @@ function(input, output, session) {
   #                          levels=building_types_selection[,1])
   palette.bt <- colorFactor(rainbow(nrow(building_types)), 
                             levels=building_types[,building_type_id])
+  palette.yearbuilt <- colorNumeric(c("yellow", "green", "blue", "violet", "red"), range(all.years.built, na.rm = TRUE),
+                                    na.color = "white")
+
 
   # enable/disable color selection depending on clustering
   observeEvent(input$cluster, {

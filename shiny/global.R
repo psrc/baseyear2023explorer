@@ -73,7 +73,7 @@ tod_data <- data.table(tod_id = 0:6, tod_name = c("No TOD", "BRT", "Commuter Rai
 
 color.attributes <- c("bt"="building_type_id", 
                       "sizeres"="residential_units", "sizenonres"="non_residential_sqft", 
-                      "tod" = "tod_id")
+                      "tod" = "tod_id", "yearbuilt" = "year_built")
 
 if(file.exists((f <- file.path(wrkdir, data, hhs.file)))) {
     hhs <- readRDS(f)
@@ -129,8 +129,12 @@ set.seed(1234)
 buildings[Nbld > 1, lat := jitter(lat)]
 buildings[Nbld > 1, lon := jitter(lon)]
 buildings[, Nbld := NULL]
+buildings[year_built == 0, year_built := NA]
 
 coordinates <- SpatialPointsDataFrame(parcels.attr[!is.na(lon),.(lon, lat)], parcels.attr[!is.na(lon)])
+
+# all years built for a color palette
+all.years.built <- sort(unique(buildings[, year_built]))
 
 # prepare for spatial indicators
 shapes <- list(zone_id = rmapshaper::ms_simplify(sf::st_read(file.path(wrkdir, data, "gis", "TAZ_2010_WGS84.shp"),
