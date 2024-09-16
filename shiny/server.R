@@ -198,11 +198,11 @@ function(input, output, session) {
     if (is.null(sSelected) || values$ids == " ") return()
     color.tod <- input$color_pcl_by_tod
     if(color.tod) {
-      marker.popup <- ~paste0("<strong>Parcel ID: </strong>", parcel_id,
-                              "<br>TOD: ", tod_name)
+      marker.popup <- ~paste0("<strong>Parcel ID: </strong>", construct.assessor.link(parcel_id, parcel_id_fips, county_id), 
+                              "<br/>TOD: ", tod_name)
       leaflet.results.tod(leafletProxy("map"), sSelected, marker.popup)
     } else {
-      marker.popup <- ~paste0("<strong>Parcel ID: </strong>", parcel_id)
+      marker.popup <- ~paste0("<strong>Parcel ID: </strong>", construct.assessor.link(parcel_id, parcel_id_fips, county_id))
       leaflet.results(leafletProxy("map"), sSelected, marker.popup)
     }
   })
@@ -284,7 +284,7 @@ function(input, output, session) {
   observe({
     sSelected <- sSelectedcl()
     if (is.null(sSelected) || values.cl$ids == " ") return()
-    marker.popup <- ~paste0("<strong>Parcel ID: </strong>", as.character(parcel_id))
+    marker.popup <- ~paste0("<strong>Parcel ID: </strong>", construct.assessor.link(parcel_id, parcel_id_fips, county_id))
     leaflet.results(leafletProxy("mapc"), sSelected, marker.popup)
   })
     
@@ -392,19 +392,22 @@ function(input, output, session) {
                               parcel_id_fips, "/summary' target = '_blank'>", parcel_id, "</a>"), # Pierce
              ifelse(county_id == 35, paste0("<a href = 'https://psearch.kitsap.gov/pdetails/Details?page=general&parcel=",
                               parcel_id_fips, "' target = '_blank'>", parcel_id, "</a>"),
-           parcel_id)
-      )
+                    ifelse(county_id == 61, paste0("<a href = 'https://www.snoco.org/proptax/search.aspx?parcel_number=",
+                                                   parcel_id_fips, "' target = '_blank'>", parcel_id, "</a>"),    
+                        parcel_id)
+                    )
+            )
     )
   
   marker.popup <- function() ~paste0("Parcel ID:  ", construct.assessor.link(parcel_id, parcel_id_fips, county_id), 
-                                     "<br>Bld ID:     ", as.integer(building_id), 
-                                     "<br>Year built: ", as.integer(year_built),
-                                     "<br>Bld type:   ", building_type_name,
-                                     "<br>DU:         ", as.integer(residential_units),
-                                     "<br>HHs:         ", as.integer(households),
-                                     "<br>Non-res sf: ", as.integer(non_residential_sqft),
-                                     "<br>Jobs: ", as.integer(jobs),
-                                     "<br>TOD: ", tod_name
+                                     "<br/>Bld ID:     ", as.integer(building_id), 
+                                     "<br/>Year built: ", as.integer(year_built),
+                                     "<br/>Bld type:   ", building_type_name,
+                                     "<br/>DU:         ", as.integer(residential_units),
+                                     "<br/>HHs:         ", as.integer(households),
+                                     "<br/>Non-res sf: ", as.integer(non_residential_sqft),
+                                     "<br/>Jobs: ", as.integer(jobs),
+                                     "<br/>TOD: ", tod_name
                             )
   
   # display markers
@@ -614,25 +617,25 @@ function(input, output, session) {
   
   get.polmap.popup <- function(shp, indname, digits) {
     popup <- paste0("<strong>ID: </strong>", shp$name_id,
-           "<br><strong>", indname,": </strong>", prettyNum(round(shp[[indname]], digits), big.mark = ","))
+           "<br/><strong>", indname,": </strong>", prettyNum(round(shp[[indname]], digits), big.mark = ","))
     if(indname %in% race.indicators) { # add the other races into popup
       for(ind in race.indicators)
-        if (indname != ind) popup <- paste0(popup, "<br><strong>", ind, ": </strong>", prettyNum(round(shp[[ind]], digits), big.mark = ","))
+        if (indname != ind) popup <- paste0(popup, "<br/><strong>", ind, ": </strong>", prettyNum(round(shp[[ind]], digits), big.mark = ","))
     }
     #browser()
     if(indname %in% capacity.indicators){
       for(ind in capacity.indicators)
-        if (indname != ind) popup <- paste0(popup, "<br><strong>", ind, ": </strong>", prettyNum(round(shp[[ind]], digits), big.mark = ","))
+        if (indname != ind) popup <- paste0(popup, "<br/><strong>", ind, ": </strong>", prettyNum(round(shp[[ind]], digits), big.mark = ","))
     }
     if(indname != "tot_households")
       popup <- paste0(popup,
-           "<br><strong>", "total HH",": </strong>", prettyNum(round(shp$tot_households, digits), big.mark = ","))
+           "<br/><strong>", "total HH",": </strong>", prettyNum(round(shp$tot_households, digits), big.mark = ","))
     if(indname != "tot_population")
       popup <- paste0(popup,
-           "<br><strong>", "total pop",": </strong>", prettyNum(round(shp$tot_population, digits), big.mark = ","))
+           "<br/><strong>", "total pop",": </strong>", prettyNum(round(shp$tot_population, digits), big.mark = ","))
     if(indname != "tot_jobs")
       popup <- paste0(popup,
-           "<br><strong>", "total jobs",": </strong>", prettyNum(round(shp$tot_jobs, digits), big.mark = ","))
+           "<br/><strong>", "total jobs",": </strong>", prettyNum(round(shp$tot_jobs, digits), big.mark = ","))
   }
   
   compute.indicator <- function(indicator, geo.id){
