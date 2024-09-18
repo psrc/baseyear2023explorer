@@ -5,14 +5,14 @@ library(data.table)
 
 load.from.mysql <- TRUE
 
-process.parcels <- FALSE
+process.parcels <- TRUE
 process.buildings <- FALSE
 process.households <- FALSE
 process.jobs <- FALSE
 process.persons <- FALSE
-process.capacity <- FALSE
+process.capacity <- TRUE
 process.schools <- FALSE
-process.census.blocks <- TRUE
+process.census.blocks <- FALSE
 
 # used when loading from files (if load.from.mysql is FALSE)
 parcels.file.name <- "urbansim_parcels_kitsap.csv"

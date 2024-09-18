@@ -47,7 +47,7 @@ if(file.exists((f <- file.path(wrkdir, data, parcel.cap)))){
     cap[, DUcapxratio := ifelse(mixed_cap == 1, ratio * DUcap, DUcap)]
     cap[, SQFTcapxratio := ifelse(mixed_cap == 1, ratio * SQFTcap, SQFTcap)]
     # join with parcel dataset
-    parcels.attr <- parcels.attr %>% left_join(cap, by = "parcel_id")
+    parcels.attr <- merge(parcels.attr, cap, by = "parcel_id", all.x = TRUE)
 } else {
     parcels.attr[, `:=`(DUcap = 0, SQFTcap = 0, DUcapxratio = 0, SQFTcapxratio = 0)]
 }
