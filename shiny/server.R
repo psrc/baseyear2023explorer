@@ -123,7 +123,7 @@ function(input, output, session) {
                 census_2020_block = census_2020_block_id,
                 TOD = tod_name, parcel_sqft, 
                 LUtype = land_use_type_id,
-                use_code, #plan_type = plan_type_id,
+                use_code, plan_type = plan_type_id,
                 land_value, DU = residential_units,
                 HH = households, Pop = population,
                 nonres_sqft = non_residential_sqft,
