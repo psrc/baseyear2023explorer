@@ -115,7 +115,7 @@ if("tod_id" %in% colnames(parcels.attr)){
 } else parcels.attr[, `:=`(tod_id = 0, tod_name = "", tod_color = "")]
 
 if(exists("schools")){
-    parcels.attr[schools, school_id := i.school_id, on = "parcel_id"]
+    parcels.attr[schools, school_id := i.schoolcode, on = "parcel_id"]
 } else parcels.attr[, school_id := 0]
 
 buildings <- merge(buildings, building_types, by = "building_type_id")

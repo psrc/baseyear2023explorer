@@ -17,9 +17,9 @@ navbarPage(theme = shinytheme("simplex"),
                                                           "Census block (int)"= "census_block_id",
                                                           "Census block group (int)" = "census_block_group_id",
                                                           "Census tract (int)" = "census_tract_id",
-                                                          #"Plan type ID" = "plan_type_id",
-                                                          "School ID" = "school_id"#,
-                                                          #"School ID (catchment)" = "school_catchment_id"
+                                                          "Plan type ID" = "plan_type_id",
+                                                          "School ID" = "school_id",
+                                                          "School ID (catchment)" = "school_catchment_id"
                                                           ),
                                            width = '100%'
                                ),
