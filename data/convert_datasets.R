@@ -6,11 +6,12 @@ library(data.table)
 load.from.mysql <- TRUE
 
 process.parcels <- TRUE
-process.buildings <- FALSE
-process.households <- FALSE
-process.jobs <- FALSE
-process.persons <- FALSE
+process.buildings <- TRUE
+process.households <- TRUE
+process.jobs <- TRUE
+process.persons <- TRUE
 process.capacity <- TRUE
+process.catchments <- TRUE
 process.schools <- FALSE
 process.census.blocks <- FALSE
 
@@ -33,6 +34,7 @@ persons.tbl.name <- "persons"
 schools.tbl.name <- "schools"
 census.blocks.tbl.name <- "census_blocks"
 census.bg.tbl.name <- "census_block_groups"
+catchment.tbl.name <- "parcels_catchment_areas"
 
 db.name <- "psrc_2023_parcel_baseyear"
 
@@ -66,6 +68,13 @@ if(process.parcels){
         qr <- dbSendQuery(mydb, paste0("select * from ", parcels.tbl.name))
         pclattr <- data.table(fetch(qr, n = -1))
         dbClearResult(qr)
+        if(process.catchments){
+            qr <- dbSendQuery(mydb, paste0("select * from ", catchment.tbl.name))
+            catch <- data.table(fetch(qr, n = -1))
+            dbClearResult(qr)
+            pclattr[catch, `:=`(elem_id = i.elem_id, mschool_id = i.mschool_id, hschool_id = i.hschool_id), 
+                    on = "parcel_id"]
+        }
     } else {
         pclattr <- fread(parcels.file.name)
     }
