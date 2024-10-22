@@ -5,13 +5,13 @@ library(data.table)
 
 load.from.mysql <- TRUE
 
-process.parcels <- TRUE
+process.parcels <- FALSE
 process.buildings <- TRUE
-process.households <- TRUE
+process.households <- FALSE
 process.jobs <- TRUE
 process.persons <- TRUE
-process.capacity <- TRUE
-process.catchments <- TRUE
+process.capacity <- FALSE
+process.catchments <- FALSE
 process.schools <- FALSE
 process.census.blocks <- FALSE
 
