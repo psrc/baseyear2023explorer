@@ -10,8 +10,8 @@ process.buildings <- FALSE
 process.households <- FALSE
 process.jobs <- FALSE
 process.persons <- FALSE
-process.capacity <- TRUE
-process.catchments <- FALSE
+process.capacity <- FALSE
+process.catchments <- TRUE
 process.schools <- FALSE
 process.census.blocks <- FALSE
 
@@ -24,6 +24,7 @@ persons.file.name <- "persons.csv"
 schools.file.name <- "schools.csv"
 census.blocks.file.name <- "census_blocks.csv"
 census.bg.file.name <- "census_block_groups.csv"
+catchment.file.name <- "parcels_catchment_areas.csv"
 
 # used when loading from MySQL DB (if load.from.mysql is TRUE)
 parcels.tbl.name <- "parcels"
@@ -77,6 +78,11 @@ if(process.parcels){
         }
     } else {
         pclattr <- fread(parcels.file.name)
+        if(process.catchments){
+            catch <- fread(catchment.file.name)
+            pclattr[catch, `:=`(elem_id = i.elem_id, mschool_id = i.mschool_id, hschool_id = i.hschool_id), 
+                    on = "parcel_id"]
+        }
     }
     if(process.parcels){
         saveRDS(pclattr, "parcels.rds")
