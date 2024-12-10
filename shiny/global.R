@@ -38,7 +38,7 @@ parcels[parcel_id %in% dupl.pcl, `:=`(lat = jitter(lat, factor = 0.2),
                                       lon = jitter(lon, factor = 0.2))]
 
 # join parcel datasets together
-parcels.attr <- merge(parcels, attr, by = "parcel_id", all.x = TRUE)
+parcels.attr <- merge(parcels[, .(parcel_id, lat, lon)], attr, by = "parcel_id", all.x = TRUE)
 
 # capacity
 if(file.exists((f <- file.path(wrkdir, data, parcel.cap)))){

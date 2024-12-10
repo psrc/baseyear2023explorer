@@ -3,21 +3,21 @@
 
 library(data.table)
 
-load.from.mysql <- TRUE
+load.from.mysql <- FALSE
 
-process.parcels <- FALSE
-process.buildings <- TRUE
+process.parcels <- TRUE
+process.buildings <- FALSE
 process.households <- FALSE
-process.jobs <- TRUE
-process.persons <- TRUE
-process.capacity <- FALSE
+process.jobs <- FALSE
+process.persons <- FALSE
+process.capacity <- TRUE
 process.catchments <- FALSE
 process.schools <- FALSE
 process.census.blocks <- FALSE
 
 # used when loading from files (if load.from.mysql is FALSE)
-parcels.file.name <- "urbansim_parcels_kitsap.csv"
-buildings.file.name <- "urbansim_buildings_kitsap.csv"
+parcels.file.name <- "parcels_upd_sqft_hct.csv"
+buildings.file.name <- "buildings.csv"
 households.file.name <- "households.csv"
 jobs.file.name <- "jobs.csv"
 persons.file.name <- "persons.csv"
