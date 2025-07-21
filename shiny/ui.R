@@ -131,6 +131,56 @@ navbarPage(theme = shinytheme("simplex"),
                         ) # end fluidRow
                     ) # end fluidPage
            ), # end tabPanel
+           tabPanel("Parcels by expression",
+                    tags$head(tags$script(src="gomap.js")),
+                    fluidPage(
+                        fluidRow(
+                            column(width = 2,
+                                   selectInput(inputId = "pexp_queryBy",
+                                               label = h4("Query parcels by:"),
+                                               choices = list("Parcel ID" = "parcel_id",
+                                                              "TAZ" = "zone_id",
+                                                              "FAZ" = "faz_id",
+                                                              "City ID" = "city_id",
+                                                              "Control HCT" = "control_hct_id",
+                                                              "2020 census block" = "census_2020_block_id",
+                                                              "2020 census block group" = "census_2020_block_group_id",
+                                                              "Census block (int)"= "census_block_id",
+                                                              "Census block group (int)" = "census_block_group_id",
+                                                              "Census tract (int)" = "census_tract_id",
+                                                              "Plan type ID" = "plan_type_id",
+                                                              "School ID (catchment)" = "school_catchment_id"
+                                               ),
+                                               width = '100%'
+                                   ),
+                                   br(),
+                                   h4("Enter one or more ids"),
+                                   helpText("Separate multiple ids with commas or type as range (i.e. 1000:2000)"),
+                                   textInput(inputId = "pexp_id",
+                                             label = "",
+                                             width = '100%'
+                                   ),
+                                   selectInput("LUTfilter", "Generic Land Use Type", 
+                                               structure(land_use_types_selection[,1],
+                                                         names=rownames(land_use_types_selection)),
+                                               multiple = TRUE, selected = land_use_types_selection[,1]),
+                                   textInput("pexp_color", label = "Color By Expression", width = '100%'),
+                                   textOutput("pexp_status"),
+                                   br(),
+                                   actionButton(inputId = "pexp_goButton",
+                                                label = "Enter"),
+                                   actionButton(inputId = "pexp_clearButton",
+                                                label = "Clear all"),
+                                   br(),
+                                   br()
+                            ), # end column
+                            column(width = 10,
+                                   leafletOutput("pexp_map", height = "725px"),
+                                   DT::dataTableOutput("pexp_dt", height = "100px")
+                            ) # end column
+                        ) # end fluidRow
+                    ) # end fluidPage
+           ), # end tabPanel
            tabPanel("Tables",
                     fluidPage(
                             selectInput(inputId = "tbl_queryBy",

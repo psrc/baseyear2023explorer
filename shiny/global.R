@@ -11,7 +11,7 @@ library(rmapshaper)
 #library(googleVis)
 
 wrkdir <- '/home/shiny/apps/' # shiny path
-#wrkdir <- '/Users/hana/psrc/R/shinyserver'
+wrkdir <- '/Users/hana/psrc/R/shinyserver'
 
 data <- 'baseyear2023explorer/data'
 
@@ -75,6 +75,17 @@ color.attributes <- c("bt"="building_type_id",
                       "sizeres"="residential_units", "sizenonres"="non_residential_sqft", 
                       "tod" = "tod_id", "yearbuilt" = "year_built")
 
+# get land use type
+land_use_types <- fread(file.path(wrkdir, data, "land_use_types.csv"))[,c("land_use_type_id", "generic_land_use_type_id")]
+generic_land_use_types <- fread(file.path(wrkdir, data, "generic_land_use_types.csv"))[, .(generic_land_use_type_id, generic_land_use_type_name)]
+land_use_types <- merge(land_use_types, generic_land_use_types, by = "generic_land_use_type_id")
+ordered_lut_names <- generic_land_use_types[order(generic_land_use_type_id), generic_land_use_type_name]
+land_use_types_selection <- data.frame(generic_land_use_types)
+rownames(land_use_types_selection) <- land_use_types_selection$generic_land_use_type_name
+land_use_types_selection <- land_use_types_selection[ordered_lut_names,"generic_land_use_type_id", drop=FALSE]
+setkey(land_use_types, land_use_type_id)
+
+
 if(file.exists((f <- file.path(wrkdir, data, hhs.file)))) {
     hhs <- readRDS(f)
     buildings[hhs[, .(.N, population=sum(persons)), by = "building_id"], 
@@ -94,10 +105,11 @@ if(file.exists((f <- file.path(wrkdir, data, schools.file))))
 parcels.attr <- data.table(parcels.attr)
 parcels.attr[buildings[, .(households = sum(households), jobs = sum(jobs), 
                            DU = sum(residential_units), nrsqft = sum(non_residential_sqft),
-                           pop = sum(population), Nblds = .N
+                           pop = sum(population), impr_value = sum(improvement_value), Nblds = .N
                            ), by = "parcel_id"], 
              `:=`(households = i.households, jobs = i.jobs, residential_units = i.DU, 
-                  non_residential_sqft = i.nrsqft, population = i.pop, Nblds = i.Nblds), 
+                  non_residential_sqft = i.nrsqft, population = i.pop, 
+                  improvement_value = i.impr_value, Nblds = i.Nblds), 
              on = "parcel_id"]
 parcels.attr[, region_id := 1]
 
@@ -117,6 +129,8 @@ if("tod_id" %in% colnames(parcels.attr)){
 if(exists("schools")){
     parcels.attr[schools, school_id := i.school_id, on = "parcel_id"]
 } else parcels.attr[, school_id := 0]
+
+parcels.attr <- merge(parcels.attr, land_use_types, by = "land_use_type_id")
 
 buildings <- merge(buildings, building_types, by = "building_type_id")
 buildings <- merge(buildings, parcels.attr[, c("parcel_id", 

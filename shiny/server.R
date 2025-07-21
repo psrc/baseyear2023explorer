@@ -50,8 +50,8 @@ function(input, output, session) {
   }  
   
   # reset/default map
-  leaflet.blank.blds <- function() {
-    leaflet() %>%
+  leaflet.blank.blds <- function(toolbar = TRUE) {
+    map <- leaflet() %>%
       #addProviderTiles(providers$CartoDB.Positron, group = "Street Map") %>%
       addProviderTiles(providers$Esri.WorldStreetMap, group = "Street Map") %>%
       addProviderTiles(providers$Esri.WorldImagery, group = "Imagery") %>%
@@ -65,8 +65,10 @@ function(input, output, session) {
           title="Zoom to Region",
           onClick=JS("function(btn, map){ 
                      map.setView([47.549390, -122.008546],9);}"))
-      ) %>% #### Adapted from https://redoakstrategic.com/geoshaper/
-      addDrawToolbar(targetGroup='Selected',
+      ) 
+    if(toolbar)
+      map <- map %>% #### Adapted from https://redoakstrategic.com/geoshaper/
+        addDrawToolbar(targetGroup='Selected',
                      polylineOptions=FALSE,
                      markerOptions = FALSE,
                      polygonOptions = drawPolygonOptions(shapeOptions=drawShapeOptions(fillOpacity = 0,color = 'white',weight = 3)),
@@ -74,11 +76,12 @@ function(input, output, session) {
                      circleOptions = drawCircleOptions(shapeOptions = drawShapeOptions(fillOpacity = 0,color = 'white',weight = 3)),
                      editOptions = editToolbarOptions(edit = FALSE, selectedPathOptions = selectedPathOptions())
       )
+    map
   }
   
   
   # show leaflet results for buildings
-  leaflet.results.blds <- function(proxy, selected.data, popup, add=FALSE, cluster = FALSE, layer.id = NULL) {
+  leaflet.results.blds <- function(proxy, selected.data, popup, add=FALSE, cluster = FALSE, layer.id = NULL, toolbar = TRUE) {
     if(!add) proxy <- proxy %>% clearMarkers() %>% clearMarkerClusters()
     cluster.options <- NULL
     if(cluster) cluster.options <- markerClusterOptions()
@@ -92,7 +95,7 @@ function(input, output, session) {
                                clusterOptions = cluster.options,
                                layerId = as.character(layer.id)
                 )
-    if(!add)
+    if(!add && toolbar)
      proxy <- proxy %>% #### Adapted from https://redoakstrategic.com/geoshaper/
                 addDrawToolbar(targetGroup='Selected',
                      polylineOptions=FALSE,
@@ -102,6 +105,35 @@ function(input, output, session) {
                      circleOptions = drawCircleOptions(shapeOptions = drawShapeOptions(fillOpacity = 0,color = 'white',weight = 3)),
                      editOptions = editToolbarOptions(edit = FALSE, selectedPathOptions = selectedPathOptions())
         )
+    proxy
+  }  
+  
+  # show leaflet results for parcels by expression
+  leaflet.results.pexp <- function(proxy, selected.data, popup, add=FALSE, cluster = FALSE, layer.id = NULL) {
+    # TODO: this might not be needed; just use leaflet.results.blds (not sure)
+    if(!add) proxy <- proxy %>% clearMarkers() %>% clearMarkerClusters()
+    cluster.options <- NULL
+    if(cluster) cluster.options <- markerClusterOptions()
+    proxy <- proxy %>% addCircleMarkers(data = selected.data,
+                                        ~lon,
+                                        ~lat,
+                                        radius = 3,
+                                        popup = popup,
+                                        fillOpacity=0.4,
+                                        color = ~color, 
+                                        clusterOptions = cluster.options,
+                                        layerId = as.character(layer.id)
+    )
+    # if(!add)
+    #   proxy <- proxy %>% #### Adapted from https://redoakstrategic.com/geoshaper/
+    #   addDrawToolbar(targetGroup='Selected',
+    #                  polylineOptions=FALSE,
+    #                  markerOptions = FALSE,
+    #                  polygonOptions = drawPolygonOptions(shapeOptions=drawShapeOptions(fillOpacity = 0,color = 'white',weight = 3)),
+    #                  rectangleOptions = drawRectangleOptions(shapeOptions=drawShapeOptions(fillOpacity = 0,color = 'white',weight = 3)),
+    #                  circleOptions = drawCircleOptions(shapeOptions = drawShapeOptions(fillOpacity = 0,color = 'white',weight = 3)),
+    #                  editOptions = editToolbarOptions(edit = FALSE, selectedPathOptions = selectedPathOptions())
+    #   )
     proxy
   }  
   
@@ -309,6 +341,121 @@ function(input, output, session) {
                                  buttons = c('csv', 'excel')
                   ), 
                   escape = c(1))
+  })
+  
+  #######
+  # Parcels by expression tab
+  ##########
+  # store selections for tracking
+  data.of.click.pexp <- reactiveValues(showed = list(), # showed on the map
+                                      selected.by.id = list(),
+                                      status = "" # status of the evaluation
+                                    ) 
+  
+  marker.popup.pexp <- function() ~paste0("Parcel ID:  ", construct.assessor.link(parcel_id, parcel_id_fips, county_id), 
+                                     "<br/>LU type:   ", generic_land_use_type_name,
+                                     "<br/>DU:         ", as.integer(residential_units),
+                                     "<br/>HHs:         ", as.integer(households),
+                                     "<br/>Non-res sf: ", as.integer(non_residential_sqft),
+                                     "<br/>Jobs: ", as.integer(jobs),
+                                     "<br/>TOD: ", tod_name,
+                                     "<br/>Expression: ", expr_values
+  )
+  
+  subset.data.pexp <- reactive({
+    if (is.null(values$ids_pexp) || values$ids_pexp == " ") return(NULL)
+    rng <- grep(":", values$ids_pexp)
+    
+    if (length(rng) > 0) {
+      rng.result <- scan(text = values$ids_pexp, sep = ":", quiet = TRUE)
+      numItems <- rng.result[1]:rng.result[2]
+    } else {
+      numItems <- scan(text = values$ids_pexp, sep = ",", quiet = TRUE)
+    }
+    subdata <- parcels.attr[get(pexp_QueryBy()) %in% numItems]
+    if (nrow(subdata)==0) return()
+    subdata <- subdata[generic_land_use_type_id %in% as.integer(input$LUTfilter)]
+    if (nrow(subdata)==0) return()
+    subdata[, color := NA]
+    #browser()
+    isolate({
+    if(!(input$pexp_color == "" || is.null(input$pexp_color))) {
+      eval.res <- try({
+        subdata[, expr_values := eval(parse(text = input$pexp_color))]
+        values <- subdata[, expr_values]
+        values[is.infinite((values))] <- NA
+        palette.size <- colorQuantile("YlOrRd", range(values, na.rm = TRUE), n=9)
+        palette.name <- "palette.size"
+        col <- do.call(palette.name, list(values))
+      }, TRUE)
+      data.of.click.pexp$status <- if(!inherits(eval.res, "try-error")) "OK" else "Error!"
+      subdata[, color:= col]
+    }
+    })
+    if(all(is.na(subdata$color))) return()
+    subdata
+  })
+  
+  subset.data.pexp.deb <- subset.data.pexp %>% debounce(1000) # causes some delay for collecting inputs
+  
+  # display markers
+  observe({
+    dat <- subset.data.pexp.deb()
+    if(!is.null(dat) && values$ids_pexp != " ") {
+      leaflet.results.pexp(leafletProxy("pexp_map"), dat, marker.popup.pexp())
+      data.of.click.pexp$selected.by.id <- dat
+    } else {
+      if(length(data.of.click.pexp$selected.by.id) > 0){ # previous selection needs to be removed
+        leafletProxy("pexp_map") %>% clearMarkers()
+        data.of.click.pexp$selected.by.id <- NULL
+      }
+    }
+    update.selection()
+    if(length(data.of.click.pexp$showed) > 0) {
+      if(length(data.of.click.pexp$selected.by.id) == 0) 
+        leafletProxy("pexp_map") %>% clearMarkers()
+      leaflet.results.pexp(leafletProxy("pexp_map"),data.of.click.pexp$showed, 
+                           marker.popup.pexp(), add = TRUE)
+      
+    }
+  })
+  
+  
+  # display initial map
+  output$pexp_map <- renderLeaflet({
+    leaflet.blank.blds(toolbar = FALSE)
+  })
+  
+  # Query by:
+  pexp_QueryBy <- eventReactive(input$pexp_goButton, {
+    input$pexp_queryBy  
+  })
+  
+  # update place holder with user's parcel_ids
+  observeEvent(input$pexp_goButton, {
+    values$ids_pexp <- input$pexp_id
+  })
+  
+  # clear map, table, and values in input text box
+  observeEvent(input$pexp_clearButton, {
+    values$ids_pexp = " "
+    updateTextInput(session, "pexp_id", value = " ")
+    updateTextInput(session, "pexp_color", value = " ")
+    leafletProxy("pexp_map") %>% clearMarkers()
+    data.of.click.pexp$selected.by.id <- NULL
+    data.of.click.pexp$showed <- NULL
+    data.of.click.pexp$status <- ""
+  })
+  
+  # Display table with parcel info
+  output$pexp_dt <- DT::renderDataTable({
+    d <- data.table(`Parcel attributes` = sort(colnames(parcels.attr)))
+    datatable(d, caption = "", rownames = FALSE,
+              options = list(paging = FALSE, searching = TRUE, columns.orderable = TRUE))
+  })
+  
+  output$pexp_status <- renderText({
+    paste("Status: ", data.of.click.pexp$status)
   })
   
   #######
