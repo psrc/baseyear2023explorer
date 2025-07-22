@@ -180,23 +180,34 @@ if(process.capacity){
     } else {
         constraints <- fread("development_constraints.csv")
     }
-    pclw <- merge(pcl[, .(parcel_id, plan_type_id, parcel_sqft)], constraints, by = "plan_type_id", 
-                  allow.cartesian=TRUE, all = TRUE)
-    
+    subpcl <- pcl[, .(parcel_id, plan_type_id, parcel_sqft, hb_tier, hb_hct_buffer)]
+    pclw <- merge(subpcl, constraints, y = "plan_type_id", allow.cartesian=TRUE, all = TRUE)
+    # HB1110 constraints
+    constraints_hb <- fread("development_constraints_hb1110.csv")
+    pclw[, is_zoned_res_or_mix := generic_land_use_type_id %in% c(1, 2, 6)]
+    pclw <- rbind(pclw,
+                merge(subpcl[parcel_id %in% pclw[is_zoned_res_or_mix == TRUE, parcel_id]], 
+                      constraints_hb[constraint_type == "units_per_lot"],
+                  by = c("hb_tier", "hb_hct_buffer"))
+                 )
     # compute building sqft & residential units
     if(! "coverage" %in% colnames(pclw)) pclw[, coverage := 0.95]
-
-    pclw[constraint_type == "far", building_sqft := parcel_sqft * maximum * coverage]
-    pclw[constraint_type == "units_per_acre", residential_units := parcel_sqft * maximum / 43560 * coverage]
+    pclw[constraint_type == "far", `:=`(building_sqft = parcel_sqft * maximum * coverage, is_residential = FALSE)]
+    pclw[constraint_type == "units_per_acre", `:=`(residential_units = parcel_sqft * maximum / 43560 * coverage,
+                                                   is_residential = TRUE)]
+    pclw[constraint_type == "units_per_lot", `:=`(residential_units = maximum, is_residential = TRUE)]
     
     # select one max for residential and one for non-res type, so that each parcel has 2 records at most
     pclwu <- pclw[pclw[, .I[which.max(maximum)], by = .(parcel_id, constraint_type)]$V1][!is.na(parcel_id)]
-    pclwu[, mixed := .N > 1, by = parcel_id]
-    pclwm <- merge(pclwu[constraint_type == "far", .(parcel_id, SQFTcap = building_sqft)],
-                    pclwu[constraint_type == "units_per_acre", .(parcel_id, DUcap = residential_units)], all = TRUE)[, mixed_cap := 0]
+    pclwu[, mixed := any(is_residential == FALSE) & any(is_residential == TRUE), by = parcel_id]
+    pclwm <- merge(merge(pclwu[constraint_type == "far", .(parcel_id, SQFTcap = building_sqft)],
+                        pclwu[constraint_type == "units_per_acre", .(parcel_id, DUcap = residential_units)], all = TRUE),
+                   pclwu[constraint_type %in% c("units_per_acre", "units_per_lot"), 
+                         .(parcel_id, DUcapHB1110 = pmax(residential_units, na.rm = TRUE)), by = "parcel_id"], all = TRUE)[, mixed_cap := 0]
     pclwm[!is.na(SQFTcap) & !is.na(DUcap) & SQFTcap > 0 & DUcap > 0, mixed_cap := 1]
     pclwm[is.na(SQFTcap), SQFTcap := 0]
     pclwm[is.na(DUcap), DUcap := 0]
+    pclwm[is.na(DUcapHB1110), DUcapHB1110 := 0]
     saveRDS(pclwm, "parcels_capacity.rds")
 }
 
