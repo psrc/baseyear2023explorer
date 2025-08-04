@@ -349,7 +349,9 @@ function(input, output, session) {
   # store selections for tracking
   data.of.click.pexp <- reactiveValues(showed = list(), # showed on the map
                                       selected.by.id = list(),
-                                      status = "" # status of the evaluation
+                                      status.color = "", # status of the color evaluation
+                                      status.filter = "", # status of the filter evaluation
+                                      nparcels = 0
                                     ) 
   
   marker.popup.pexp <- function() ~paste0("Parcel ID:  ", construct.assessor.link(parcel_id, parcel_id_fips, county_id), 
@@ -373,11 +375,31 @@ function(input, output, session) {
       numItems <- scan(text = values$ids_pexp, sep = ",", quiet = TRUE)
     }
     subdata <- parcels.attr[get(pexp_QueryBy()) %in% numItems]
+    data.of.click.pexp$nparcels <- nrow(subdata)
     if (nrow(subdata)==0) return()
+    
     subdata <- subdata[generic_land_use_type_id %in% as.integer(input$LUTfilter)]
+    data.of.click.pexp$nparcels <- nrow(subdata)
     if (nrow(subdata)==0) return()
-    subdata[, color := NA]
     #browser()
+    isolate({
+        if(!(input$pexp_filter == "" || is.null(input$pexp_filter))) {
+            eval.res <- try({
+                subdata[, expr_filter := eval(parse(text = input$pexp_filter))]
+            }, TRUE)
+            if(!inherits(eval.res, "try-error")) {
+                data.of.click.pexp$status.filter <- "OK" 
+            } else {
+                data.of.click.pexp$status.filter <- "Error!"
+                data.of.click.pexp$nparcels <- 0
+                return()
+            }
+            subdata <- subdata[expr_filter == TRUE]
+            data.of.click.pexp$nparcels <- nrow(subdata)
+            if (nrow(subdata)==0) return()
+        }
+    })
+    subdata[, color := NA]
     isolate({
     if(!(input$pexp_color == "" || is.null(input$pexp_color))) {
       eval.res <- try({
@@ -388,11 +410,20 @@ function(input, output, session) {
         palette.name <- "palette.size"
         col <- do.call(palette.name, list(values))
       }, TRUE)
-      data.of.click.pexp$status <- if(!inherits(eval.res, "try-error")) "OK" else "Error!"
-      subdata[, color:= col]
+      if(!inherits(eval.res, "try-error")){
+        data.of.click.pexp$status.color <-  "OK" 
+        subdata[, color:= col]
+      } else {
+          data.of.click.pexp$status.color <- "Error!"
+          data.of.click.pexp$nparcels <- 0
+          return()
+      }
     }
     })
-    if(all(is.na(subdata$color))) return()
+    if(all(is.na(subdata$color))) {
+        data.of.click.pexp$status.color <- "No color assigned"
+        return()
+    }
     subdata
   })
   
@@ -444,7 +475,9 @@ function(input, output, session) {
     leafletProxy("pexp_map") %>% clearMarkers()
     data.of.click.pexp$selected.by.id <- NULL
     data.of.click.pexp$showed <- NULL
-    data.of.click.pexp$status <- ""
+    data.of.click.pexp$status.color <- ""
+    data.of.click.pexp$status.filter <- ""
+    data.of.click.pexp$nparcels <- 0
   })
   
   # Display table with parcel info
@@ -454,8 +487,17 @@ function(input, output, session) {
               options = list(paging = FALSE, searching = TRUE, columns.orderable = TRUE))
   })
   
-  output$pexp_status <- renderText({
-    paste("Status: ", data.of.click.pexp$status)
+  output$pexp_status_color <- renderText({
+    paste("Status: ", data.of.click.pexp$status.color)
+  })
+  
+  output$pexp_status_filter <- renderText({
+      paste("Status: ", data.of.click.pexp$status.filter)
+  })
+  
+  output$pexp_nparcels <- renderText({
+      paste("Showing: ", data.of.click.pexp$nparcels, "parcels",
+            if(data.of.click.pexp$nparcels > 10000) "(if slow reduce geography)" else "")
   })
   
   #######
