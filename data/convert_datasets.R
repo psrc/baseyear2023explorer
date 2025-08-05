@@ -3,15 +3,14 @@
 
 library(data.table)
 
-load.from.mysql <- FALSE
+load.from.mysql <- TRUE
 
-process.parcels <- TRUE
+process.parcels <- FALSE
 process.buildings <- FALSE
 process.households <- FALSE
 process.jobs <- FALSE
 process.persons <- FALSE
-process.capacity <- FALSE
-process.catchments <- TRUE
+process.capacity <- TRUE
 process.schools <- FALSE
 process.census.blocks <- FALSE
 
@@ -37,7 +36,7 @@ census.blocks.tbl.name <- "census_blocks"
 census.bg.tbl.name <- "census_block_groups"
 catchment.tbl.name <- "parcels_catchment_areas"
 
-db.name <- "psrc_2023_parcel_baseyear"
+db.name <- "2023_parcel_baseyear"
 
 # Connecting to Mysql
 mysql.connection <- function(dbname) {
@@ -60,6 +59,9 @@ if(load.from.mysql) {
     library(RMySQL)
     # create DB connection
     mydb <- mysql.connection(db.name)
+    qr <- dbSendQuery(mydb, "show tables")
+    table.frame <- fetch(qr, n = -1)
+    dbClearResult(qr)
 }
 
 
@@ -69,24 +71,28 @@ if(process.parcels){
         qr <- dbSendQuery(mydb, paste0("select * from ", parcels.tbl.name))
         pclattr <- data.table(fetch(qr, n = -1))
         dbClearResult(qr)
-        if(process.catchments){
-            qr <- dbSendQuery(mydb, paste0("select * from ", catchment.tbl.name))
-            catch <- data.table(fetch(qr, n = -1))
-            dbClearResult(qr)
-            pclattr[catch, `:=`(elem_id = i.elem_id, mschool_id = i.mschool_id, hschool_id = i.hschool_id), 
-                    on = "parcel_id"]
-        }
+        # need catchment areas that are currently in a separate dataset
+        # (should not be needed when this is a part of parcels table)
+        #if(process.catchments){
+            if (catchment.tbl.name %in% table.frame[, 1]) {
+                qr <- dbSendQuery(mydb, paste0("select * from ", catchment.tbl.name))
+                catch <- data.table(fetch(qr, n = -1))
+                dbClearResult(qr)
+            } else {
+                catch <- fread(catchment.file.name)
+            }
+        #}
     } else {
         pclattr <- fread(parcels.file.name)
-        if(process.catchments){
+        #if(process.catchments){
             catch <- fread(catchment.file.name)
-            pclattr[catch, `:=`(elem_id = i.elem_id, mschool_id = i.mschool_id, hschool_id = i.hschool_id), 
-                    on = "parcel_id"]
-        }
+        #}
     }
-    if(process.parcels){
-        saveRDS(pclattr, "parcels.rds")
-    }
+    #if(process.catchments){
+        pclattr[catch, `:=`(elem_id = i.elem_id, mschool_id = i.mschool_id, hschool_id = i.hschool_id), 
+                on = "parcel_id"]
+    #}
+    saveRDS(pclattr, "parcels.rds")
 }
 
 if(process.buildings){
@@ -181,12 +187,12 @@ if(process.capacity){
         constraints <- fread("development_constraints.csv")
     }
     subpcl <- pcl[, .(parcel_id, plan_type_id, parcel_sqft, hb_tier, hb_hct_buffer)]
-    pclw <- merge(subpcl, constraints, y = "plan_type_id", allow.cartesian=TRUE, all = TRUE)
+    pclw <- merge(subpcl, constraints, by = "plan_type_id", allow.cartesian=TRUE, all = TRUE)
     # HB1110 constraints
     constraints_hb <- fread("development_constraints_hb1110.csv")
     pclw[, is_zoned_res_or_mix := generic_land_use_type_id %in% c(1, 2, 6)]
     pclw <- rbind(pclw,
-                merge(subpcl[parcel_id %in% pclw[is_zoned_res_or_mix == TRUE, parcel_id]], 
+                merge(subpcl[parcel_id %in% pclw[is_zoned_res_or_mix == TRUE, parcel_id]][, plan_type_id := NULL], 
                       constraints_hb[constraint_type == "units_per_lot"],
                   by = c("hb_tier", "hb_hct_buffer"))
                  )
@@ -201,9 +207,11 @@ if(process.capacity){
     pclwu <- pclw[pclw[, .I[which.max(maximum)], by = .(parcel_id, constraint_type)]$V1][!is.na(parcel_id)]
     pclwu[, mixed := any(is_residential == FALSE) & any(is_residential == TRUE), by = parcel_id]
     pclwm <- merge(merge(pclwu[constraint_type == "far", .(parcel_id, SQFTcap = building_sqft)],
-                        pclwu[constraint_type == "units_per_acre", .(parcel_id, DUcap = residential_units)], all = TRUE),
+                        pclwu[constraint_type == "units_per_acre", .(parcel_id, DUcap = residential_units)], 
+                        by = "parcel_id", all = TRUE),
                    pclwu[constraint_type %in% c("units_per_acre", "units_per_lot"), 
-                         .(parcel_id, DUcapHB1110 = pmax(residential_units, na.rm = TRUE)), by = "parcel_id"], all = TRUE)[, mixed_cap := 0]
+                         .(DUcapHB1110 = max(residential_units, na.rm = TRUE)), by = "parcel_id"], 
+                   all = TRUE, by = "parcel_id")[, mixed_cap := 0]
     pclwm[!is.na(SQFTcap) & !is.na(DUcap) & SQFTcap > 0 & DUcap > 0, mixed_cap := 1]
     pclwm[is.na(SQFTcap), SQFTcap := 0]
     pclwm[is.na(DUcap), DUcap := 0]

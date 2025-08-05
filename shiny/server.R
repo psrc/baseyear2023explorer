@@ -139,27 +139,31 @@ function(input, output, session) {
   
   # format table
   format.table <- function(sSelected) {
-    sSelected[, `:=`(DUcap = round(DUcap),
-                    SQFTcap = round(SQFTcap),
-                    lat = round(lat, 4),
-                    lon = round(lon, 4))][, 
-              .(parcel_id, 
+    sSelected[, .(parcel_id, 
                 #parcel_fips = parcel_id_fips,
                 parcel_fips = construct.assessor.link(parcel_id_fips, parcel_id_fips, county_id),
-                cnty = county_id, city_id, 
-                #control_hct = control_hct_id,
-                faz_id, zone_id, 
-                tract_id = census_tract_id,
-                BG_id = census_block_group_id,
-                block_id = census_block_id,
+                cnty = county_id, city = city_id, 
+                ctrl_hct = control_hct_id,
+                FAZ = faz_id, TAZ = zone_id, 
+                Tract = census_tract_id,
+                BG = census_block_group_id,
+                block = census_block_id,
                 census_2020_block = census_2020_block_id,
-                TOD = tod_name, parcel_sqft, 
+                TOD = tod_name, 
+                pcl_sqft = round(parcel_sqft), 
                 LUtype = land_use_type_id,
                 use_code, plan_type = plan_type_id,
                 land_value, DU = residential_units,
                 HH = households, Pop = population,
                 nonres_sqft = non_residential_sqft,
-                jobs, DUcap, SQFTcap, Nblds, lat, lon)]
+                Jobs = jobs, 
+                DUcap = round(DUcap), 
+                HB1110 = round(DUcapHB1110), 
+                SQFTcap = round(SQFTcap), 
+                Nblds, 
+                lat = round(lat, 4), 
+                lon = round(lon, 4)
+                )]
   }
   
   # Search by Number -------------------------------------------------------- 
@@ -287,6 +291,7 @@ function(input, output, session) {
                     non_res_sf = sum(non_residential_sqft, na.rm = TRUE), 
                     Jobs = sum(jobs, na.rm = TRUE),
                     DUcap = round(sum(DUcapxratio, na.rm = TRUE)),
+                    HB1110 = round(sum(DUcapHB1110xratio, na.rm = TRUE)),
                     SQFTcap = round(sum(SQFTcapxratio, na.rm = TRUE)))
                   ]
     setnames(d, "id", isolate(input$s_queryBy))

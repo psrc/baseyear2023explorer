@@ -11,7 +11,7 @@ library(rmapshaper)
 #library(googleVis)
 
 wrkdir <- '/home/shiny/apps/' # shiny path
-#wrkdir <- '/Users/hana/psrc/R/shinyserver'
+wrkdir <- '/Users/hana/psrc/R/shinyserver'
 
 data <- 'baseyear2023explorer/data'
 
@@ -45,6 +45,7 @@ if(file.exists((f <- file.path(wrkdir, data, parcel.cap)))){
     cap <- readRDS(f) 
     ratio <- 50/100
     cap[, DUcapxratio := ifelse(mixed_cap == 1, ratio * DUcap, DUcap)]
+    cap[, DUcapHB1110xratio := ifelse(mixed_cap == 1, ratio * DUcapHB1110, DUcapHB1110)]
     cap[, SQFTcapxratio := ifelse(mixed_cap == 1, ratio * SQFTcap, SQFTcap)]
     # join with parcel dataset
     parcels.attr <- merge(parcels.attr, cap, by = "parcel_id", all.x = TRUE)
