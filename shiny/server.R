@@ -383,32 +383,30 @@ function(input, output, session) {
     data.of.click.pexp$nparcels <- nrow(subdata)
     if (nrow(subdata)==0) return()
     
-    subdata <- subdata[generic_land_use_type_id %in% as.integer(input$LUTfilter)]
+    subdata <- subdata[generic_land_use_type_id %in% as.integer(pexp_FilterByLUT())]
     data.of.click.pexp$nparcels <- nrow(subdata)
     if (nrow(subdata)==0) return()
-    #browser()
-    isolate({
-        if(!(input$pexp_filter == "" || is.null(input$pexp_filter))) {
-            eval.res <- try({
-                subdata[, expr_filter := eval(parse(text = input$pexp_filter))]
-            }, TRUE)
-            if(!inherits(eval.res, "try-error")) {
-                data.of.click.pexp$status.filter <- "OK" 
-            } else {
-                data.of.click.pexp$status.filter <- "Error!"
-                data.of.click.pexp$nparcels <- 0
-                return()
-            }
-            subdata <- subdata[expr_filter == TRUE]
-            data.of.click.pexp$nparcels <- nrow(subdata)
-            if (nrow(subdata)==0) return()
+    filter <- pexp_FilterBy()
+    if(!(filter == "" || is.null(filter))) {    
+        eval.res <- try({
+            subdata[, expr_filter := eval(parse(text = filter))]
+        }, TRUE)
+        if(!inherits(eval.res, "try-error")) {
+            data.of.click.pexp$status.filter <- "OK" 
+        } else {
+            data.of.click.pexp$status.filter <- "Error!"
+            data.of.click.pexp$nparcels <- 0
+            return()
         }
-    })
+        subdata <- subdata[expr_filter == TRUE]
+        data.of.click.pexp$nparcels <- nrow(subdata)
+        if (nrow(subdata)==0) return()
+    }
     subdata[, color := NA]
-    isolate({
-    if(!(input$pexp_color == "" || is.null(input$pexp_color))) {
+    colorexp <- pexp_ColorBy()
+    if(!(colorexp == "" || is.null(colorexp))) {
       eval.res <- try({
-        subdata[, expr_values := eval(parse(text = input$pexp_color))]
+        subdata[, expr_values := eval(parse(text = colorexp))]
         values <- subdata[, expr_values]
         values[is.infinite((values))] <- NA
         palette.size <- colorQuantile("YlOrRd", range(values, na.rm = TRUE), n=9)
@@ -424,15 +422,15 @@ function(input, output, session) {
           return()
       }
     }
-    })
     if(all(is.na(subdata$color))) {
         data.of.click.pexp$status.color <- "No color assigned"
+        data.of.click.pexp$nparcels <- 0
         return()
     }
     subdata
   })
   
-  subset.data.pexp.deb <- subset.data.pexp %>% debounce(1000) # causes some delay for collecting inputs
+  subset.data.pexp.deb <- subset.data.pexp # %>% debounce(1000) # causes some delay for collecting inputs
   
   # display markers
   observe({
@@ -456,15 +454,26 @@ function(input, output, session) {
     }
   })
   
-  
   # display initial map
   output$pexp_map <- renderLeaflet({
     leaflet.blank.blds(toolbar = FALSE)
   })
   
-  # Query by:
+  # The functions below isolate the events so that the map changes only when the Enter button is pressed.
   pexp_QueryBy <- eventReactive(input$pexp_goButton, {
     input$pexp_queryBy  
+  })
+  
+  pexp_FilterBy <- eventReactive(input$pexp_goButton, {
+      input$pexp_filter
+  })
+  
+  pexp_FilterByLUT <- eventReactive(input$pexp_goButton, {
+      input$LUTfilter
+  })
+  
+  pexp_ColorBy <- eventReactive(input$pexp_goButton, {
+      input$pexp_color
   })
   
   # update place holder with user's parcel_ids
@@ -503,6 +512,12 @@ function(input, output, session) {
   output$pexp_nparcels <- renderText({
       paste("Showing: ", data.of.click.pexp$nparcels, "parcels",
             if(data.of.click.pexp$nparcels > 10000) "(if slow reduce geography)" else "")
+  })
+  
+  output$pexp_queryInfo <- renderText({
+      uvalues <- unique(unlist(parcels.attr[, input$pexp_queryBy, with = FALSE]))
+      paste("Available IDs: ", 
+            if(length(uvalues) > 4) paste(range(uvalues), collapse = ":") else paste(uvalues, collapse = ", "))
   })
   
   #######
