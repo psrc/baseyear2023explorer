@@ -392,7 +392,8 @@ function(input, output, session) {
             subdata[, expr_filter := eval(parse(text = filter))]
         }, TRUE)
         if(!inherits(eval.res, "try-error")) {
-            data.of.click.pexp$status.filter <- "OK" 
+            data.of.click.pexp$status.filter <- paste0("OK (", 
+                                                      round(sum(subdata$expr_filter == TRUE, na.rm = TRUE)/nrow(subdata) * 100, 1), "%)") 
         } else {
             data.of.click.pexp$status.filter <- "Error!"
             data.of.click.pexp$nparcels <- 0

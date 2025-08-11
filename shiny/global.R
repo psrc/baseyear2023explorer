@@ -104,15 +104,22 @@ if(file.exists((f <- file.path(wrkdir, data, schools.file))))
 
 # add attributes to parcels
 parcels.attr <- data.table(parcels.attr)
+buildings[year_built < 1800, year_built := NA]
 parcels.attr[buildings[, .(households = sum(households), jobs = sum(jobs), 
                            DU = sum(residential_units), nrsqft = sum(non_residential_sqft),
-                           pop = sum(population), impr_value = sum(improvement_value), Nblds = .N
+                           bldsqft = sum(residential_units * sqft_per_unit + non_residential_sqft),
+                           pop = sum(population), impr_value = sum(improvement_value), 
+                           mnage = mean(2023 - year_built, na.rm = TRUE), Nblds = .N
                            ), by = "parcel_id"], 
              `:=`(households = i.households, jobs = i.jobs, residential_units = i.DU, 
-                  non_residential_sqft = i.nrsqft, population = i.pop, 
-                  improvement_value = i.impr_value, Nblds = i.Nblds), 
+                  non_residential_sqft = i.nrsqft, building_sqft = i.bldsqft, population = i.pop, 
+                  improvement_value = i.impr_value, bld_mean_age = i.mnage, Nblds = i.Nblds), 
              on = "parcel_id"]
 parcels.attr[, region_id := 1]
+
+for(attr in c("households", "jobs", "residential_units", "non_residential_sqft", "building_sqft",
+              "population", "improvement_value", "Nblds"))
+    parcels.attr[is.na(parcels.attr[[attr]]), (attr) := 0]
 
 if("census_block_id" %in% colnames(parcels.attr) && file.exists((f <- file.path(wrkdir, data, census.blocks.file)))){
     cb <- readRDS(f)
