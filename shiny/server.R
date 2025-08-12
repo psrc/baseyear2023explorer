@@ -487,6 +487,7 @@ function(input, output, session) {
     values$ids_pexp = " "
     updateTextInput(session, "pexp_id", value = " ")
     updateTextInput(session, "pexp_color", value = " ")
+    updateTextInput(session, "pexp_filter", value = " ")
     leafletProxy("pexp_map") %>% clearMarkers()
     data.of.click.pexp$selected.by.id <- NULL
     data.of.click.pexp$showed <- NULL
