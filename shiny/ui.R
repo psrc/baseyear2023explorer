@@ -40,7 +40,7 @@ navbarPage(theme = shinytheme("simplex"),
                                br(),
                                checkboxInput("color_pcl_by_tod", "Color by TOD", FALSE),
                                br(),
-                               helpText("Last data update: 2024-12-10")
+                               helpText("Last data update: 2025-08-05")
                                ), # end column
                         column(width = 10,
                                leafletOutput("map", height = "725px")
