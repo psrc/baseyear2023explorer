@@ -5,12 +5,12 @@ library(data.table)
 
 load.from.mysql <- TRUE
 
-process.parcels <- FALSE
+process.parcels <- TRUE
 process.buildings <- FALSE
 process.households <- FALSE
 process.jobs <- FALSE
 process.persons <- FALSE
-process.capacity <- TRUE
+process.capacity <- FALSE
 process.schools <- FALSE
 process.census.blocks <- FALSE
 
@@ -37,6 +37,8 @@ census.bg.tbl.name <- "census_block_groups"
 catchment.tbl.name <- "parcels_catchment_areas"
 
 db.name <- "2023_parcel_baseyear"
+#db.name.catchment <- db.name # where is the table parcels_catchment_areas
+db.name.catchment <- "psrc_2023_parcel_baseyear"
 
 # Connecting to Mysql
 mysql.connection <- function(dbname) {
@@ -62,6 +64,12 @@ if(load.from.mysql) {
     qr <- dbSendQuery(mydb, "show tables")
     table.frame <- fetch(qr, n = -1)
     dbClearResult(qr)
+    if(process.parcels){
+        mydb.catch <- mysql.connection(db.name.catchment)
+        qr <- dbSendQuery(mydb.catch, "show tables")
+        table.frame.catch <- fetch(qr, n = -1)
+        dbClearResult(qr)
+    }
 }
 
 
@@ -74,8 +82,8 @@ if(process.parcels){
         # need catchment areas that are currently in a separate dataset
         # (should not be needed when this is a part of parcels table)
         #if(process.catchments){
-            if (catchment.tbl.name %in% table.frame[, 1]) {
-                qr <- dbSendQuery(mydb, paste0("select * from ", catchment.tbl.name))
+            if (catchment.tbl.name %in% table.frame.catch[, 1]) {
+                qr <- dbSendQuery(mydb.catch, paste0("select * from ", catchment.tbl.name))
                 catch <- data.table(fetch(qr, n = -1))
                 dbClearResult(qr)
             } else {
@@ -222,6 +230,7 @@ if(process.capacity){
 if(load.from.mysql){
     # disconnect DB
     dbDisconnect(mydb)
+    if(process.parcels) dbDisconnect(mydb.catch)
 }
 
 cat("\nConversion done.\n")
